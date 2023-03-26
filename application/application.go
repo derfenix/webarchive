@@ -1,0 +1,182 @@
+package application
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/dgraph-io/badger/v4"
+	"github.com/ogen-go/ogen/middleware"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/derfenix/webarchive/adapters/processors"
+	badgerRepo "github.com/derfenix/webarchive/adapters/repository/badger"
+	"github.com/derfenix/webarchive/api/openapi"
+	"github.com/derfenix/webarchive/entity"
+	"github.com/derfenix/webarchive/ports/rest"
+)
+
+func NewApplication(cfg Config) (Application, error) {
+	log, err := newLogger(cfg.Logging)
+	if err != nil {
+		return Application{}, fmt.Errorf("new logger: %w", err)
+	}
+
+	db, err := badgerRepo.NewBadger(cfg.DB.Path, log.Named("db"))
+	if err != nil {
+		return Application{}, fmt.Errorf("new badger: %w", err)
+	}
+
+	fileRepo := badgerRepo.NewFile(db)
+	pageRepo, err := badgerRepo.NewPage(db, fileRepo)
+	if err != nil {
+		return Application{}, fmt.Errorf("new page repo: %w", err)
+	}
+
+	processor, err := processors.NewProcessors()
+	if err != nil {
+		return Application{}, fmt.Errorf("new processors: %w", err)
+	}
+
+	server, err := openapi.NewServer(
+		rest.NewService(pageRepo),
+		openapi.WithMiddleware(
+			func(r middleware.Request, next middleware.Next) (middleware.Response, error) {
+				start := time.Now()
+
+				log := log.With(
+					zap.String("operation_id", r.OperationID),
+					zap.String("uri", r.Raw.RequestURI),
+				)
+
+				var response middleware.Response
+				var reqErr error
+
+				response, reqErr = next(r)
+
+				log.Debug("request completed", zap.Duration("duration", time.Since(start)), zap.Error(err))
+
+				return response, reqErr
+			},
+		),
+	)
+	if err != nil {
+		return Application{}, fmt.Errorf("new rest server: %w", err)
+	}
+
+	httpServer := http.Server{
+		Addr:              "0.0.0.0:5001",
+		Handler:           server,
+		ReadTimeout:       time.Second * 15,
+		ReadHeaderTimeout: time.Second * 5,
+		IdleTimeout:       time.Second * 30,
+		MaxHeaderBytes:    1024 * 2,
+	}
+
+	return Application{
+		cfg:        cfg,
+		log:        log,
+		db:         db,
+		processor:  processor,
+		httpServer: &httpServer,
+
+		pageRepo: pageRepo,
+		fileRepo: fileRepo,
+	}, nil
+}
+
+type Application struct {
+	cfg       Config
+	log       *zap.Logger
+	db        *badger.DB
+	processor entity.Processor
+
+	httpServer *http.Server
+
+	pageRepo *badgerRepo.Page
+	fileRepo *badgerRepo.File
+}
+
+func (a *Application) Log() *zap.Logger {
+	return a.log
+}
+
+func (a *Application) Start(ctx context.Context, wg *sync.WaitGroup) error {
+	wg.Add(2)
+
+	a.httpServer.BaseContext = func(net.Listener) context.Context {
+		return ctx
+	}
+
+	go func() {
+		defer wg.Done()
+
+		<-ctx.Done()
+
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
+			a.log.Warn("http graceful shutdown failed", zap.Error(err))
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+
+		a.log.Info("starting http server", zap.String("address", a.httpServer.Addr))
+
+		if err := a.httpServer.ListenAndServe(); err != nil {
+			if !errors.Is(err, http.ErrServerClosed) {
+				a.log.Error("http serve error", zap.Error(err))
+			}
+
+			a.log.Info("http server stopped")
+		}
+	}()
+
+	return nil
+}
+
+func (a *Application) Stop() error {
+	var errs error
+
+	if err := a.db.Sync(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("sync db: %w", err))
+	}
+
+	if err := badgerRepo.Backup(a.db, badgerRepo.BackupStop); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("backup on stop: %w", err))
+	}
+
+	if err := a.db.Close(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("close db: %w", err))
+	}
+
+	return errs
+}
+
+func newLogger(cfg Logging) (*zap.Logger, error) {
+	logCfg := zap.NewProductionConfig()
+	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	logCfg.EncoderConfig.EncodeDuration = zapcore.NanosDurationEncoder
+	logCfg.DisableCaller = true
+
+	logCfg.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
+	if cfg.Debug {
+		logCfg.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
+	}
+
+	log, err := logCfg.Build()
+	if err != nil {
+		return nil, fmt.Errorf("build logger: %w", err)
+	}
+
+	return log, nil
+}

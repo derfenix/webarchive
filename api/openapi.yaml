@@ -1,0 +1,174 @@
+openapi: 3.0.1
+info:
+  title: Sample API
+  description: API description in Markdown.
+  version: 1.0.0
+servers:
+  - url: 'https://api.example.com'
+paths:
+  /pages:
+    get:
+      operationId: getPages
+      summary: Get all pages
+      responses:
+        200:
+          description: All pages data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pages'
+        default:
+          $ref: '#/components/responses/undefinedError'
+    post:
+      operationId: addPage
+      summary: Add new page
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                description:
+                  type: string
+                formats:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/format'
+              required:
+                - url
+      responses:
+        201:
+          description: Page added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/page'
+        default:
+          $ref: '#/components/responses/undefinedError'
+
+  /pages/{id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getPage
+      description: Get page details
+      responses:
+        200:
+          description: Page data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pageWithResults'
+        404:
+          description: Page not found
+        default:
+          $ref: '#/components/responses/undefinedError'
+
+components:
+  responses:
+    undefinedError:
+      description: Undefined Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+  schemas:
+    format:
+      type: string
+      enum:
+        - all
+        - pdf
+        - single_page
+        - headers
+    error:
+      type: object
+      properties:
+        message:
+          type: string
+        localized:
+          type: string
+      required:
+        - message
+    pages:
+      type: array
+      items:
+        $ref: '#/components/schemas/page'
+    page:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        created:
+          type: string
+          format: date-time
+        formats:
+          type: array
+          items:
+            $ref: '#/components/schemas/format'
+        status:
+          $ref: '#/components/schemas/status'
+      required:
+        - id
+        - url
+        - formats
+        - status
+        - created
+    result:
+      type: object
+      properties:
+        format:
+          $ref: '#/components/schemas/format'
+        error:
+          type: string
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+              mimetype:
+                type: string
+              size:
+                type: integer
+                format: int64
+            required:
+              - id
+              - name
+              - mimetype
+              - size
+      required:
+        - format
+        - files
+    pageWithResults:
+      allOf:
+        - $ref: '#/components/schemas/page'
+        - type: object
+          properties:
+            results:
+              type: array
+              items:
+                $ref: '#/components/schemas/result'
+          required:
+            - results
+    status:
+      type: string
+      enum:
+        - new
+        - processing
+        - done
+        - failed
+        - with_errors

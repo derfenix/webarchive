@@ -40,7 +40,7 @@ will contain all processed formats with ids of the stored files.
 #### 4. Open file in browser
 
 ```shell
-xdg-open http://localhost:5001/pages/$page_id/file/$file_id
+xdg-open "http://localhost:5001/pages/$page_id/file/$file_id"
 ```
 Where  `$page_id` — value of the `id` field from previous command response, and
 `$file_id` — the id of interesting file.

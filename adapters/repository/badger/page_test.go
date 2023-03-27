@@ -34,7 +34,7 @@ func TestSite(t *testing.T) {
 	db, err := NewBadger(tempDir, log.Named("db"))
 	require.NoError(t, err)
 
-	siteRepo, err := NewPage(db, nil)
+	siteRepo, err := NewPage(db)
 	require.NoError(t, err)
 
 	t.Run("base path", func(t *testing.T) {

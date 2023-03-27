@@ -33,8 +33,7 @@ func NewApplication(cfg Config) (Application, error) {
 		return Application{}, fmt.Errorf("new badger: %w", err)
 	}
 
-	fileRepo := badgerRepo.NewFile(db)
-	pageRepo, err := badgerRepo.NewPage(db, fileRepo)
+	pageRepo, err := badgerRepo.NewPage(db)
 	if err != nil {
 		return Application{}, fmt.Errorf("new page repo: %w", err)
 	}
@@ -44,8 +43,11 @@ func NewApplication(cfg Config) (Application, error) {
 		return Application{}, fmt.Errorf("new processors: %w", err)
 	}
 
+	workerCh := make(chan *entity.Page)
+	worker := entity.NewWorker(workerCh, pageRepo, processor, log.Named("worker"))
+
 	server, err := openapi.NewServer(
-		rest.NewService(pageRepo),
+		rest.NewService(pageRepo, workerCh),
 		openapi.WithMiddleware(
 			func(r middleware.Request, next middleware.Next) (middleware.Response, error) {
 				start := time.Now()
@@ -85,22 +87,21 @@ func NewApplication(cfg Config) (Application, error) {
 		db:         db,
 		processor:  processor,
 		httpServer: &httpServer,
+		worker:     worker,
 
 		pageRepo: pageRepo,
-		fileRepo: fileRepo,
 	}, nil
 }
 
 type Application struct {
-	cfg       Config
-	log       *zap.Logger
-	db        *badger.DB
-	processor entity.Processor
-
+	cfg        Config
+	log        *zap.Logger
+	db         *badger.DB
+	processor  entity.Processor
 	httpServer *http.Server
+	worker     *entity.Worker
 
 	pageRepo *badgerRepo.Page
-	fileRepo *badgerRepo.File
 }
 
 func (a *Application) Log() *zap.Logger {
@@ -108,11 +109,13 @@ func (a *Application) Log() *zap.Logger {
 }
 
 func (a *Application) Start(ctx context.Context, wg *sync.WaitGroup) error {
-	wg.Add(2)
+	wg.Add(3)
 
 	a.httpServer.BaseContext = func(net.Listener) context.Context {
 		return ctx
 	}
+
+	go a.worker.Start(ctx, wg)
 
 	go func() {
 		defer wg.Done()

@@ -57,9 +57,7 @@ func (p *Page) SetProcessing() {
 	p.Status = StatusProcessing
 }
 
-func (p *Page) Process(ctx context.Context, wg *sync.WaitGroup, processor Processor) {
-	defer wg.Done()
-
+func (p *Page) Process(ctx context.Context, processor Processor) {
 	innerWG := sync.WaitGroup{}
 	innerWG.Add(len(p.Formats))
 
@@ -78,6 +76,8 @@ func (p *Page) Process(ctx context.Context, wg *sync.WaitGroup, processor Proces
 		}(format)
 	}
 
+	innerWG.Wait()
+
 	var hasResultWithOutErrors bool
 	for _, result := range p.Results.Results() {
 		if result.Err != nil {
@@ -94,6 +94,4 @@ func (p *Page) Process(ctx context.Context, wg *sync.WaitGroup, processor Proces
 	if p.Status == StatusProcessing {
 		p.Status = StatusDone
 	}
-
-	innerWG.Wait()
 }

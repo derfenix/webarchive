@@ -1,9 +1,11 @@
 package rest
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -14,16 +16,18 @@ import (
 type Pages interface {
 	ListAll(ctx context.Context) ([]*entity.Page, error)
 	Save(ctx context.Context, site *entity.Page) error
-	Get(_ context.Context, id uuid.UUID) (*entity.Page, error)
+	Get(ctx context.Context, id uuid.UUID) (*entity.Page, error)
+	GetFile(ctx context.Context, pageID, fileID uuid.UUID) (*entity.File, error)
 }
 
-func NewService(sites Pages) *Service {
-	return &Service{pages: sites}
+func NewService(sites Pages, ch chan *entity.Page) *Service {
+	return &Service{pages: sites, ch: ch}
 }
 
 type Service struct {
 	openapi.UnimplementedHandler
 	pages Pages
+	ch    chan *entity.Page
 }
 
 func (s *Service) GetPage(ctx context.Context, params openapi.GetPageParams) (openapi.GetPageRes, error) {
@@ -38,14 +42,18 @@ func (s *Service) GetPage(ctx context.Context, params openapi.GetPageParams) (op
 }
 
 func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq) (*openapi.Page, error) {
-	site := entity.NewPage(req.Value.URL, req.Value.Description.Value, FormatFromRest(req.Value.Formats)...)
+	page := entity.NewPage(req.Value.URL, req.Value.Description.Value, FormatFromRest(req.Value.Formats)...)
 
-	err := s.pages.Save(ctx, site)
+	page.Status = entity.StatusProcessing
+
+	err := s.pages.Save(ctx, page)
 	if err != nil {
-		return nil, fmt.Errorf("save site: %w", err)
+		return nil, fmt.Errorf("save page: %w", err)
 	}
 
-	res := PageToRest(site)
+	s.ch <- page
+
+	res := PageToRest(page)
 
 	return &res, nil
 }
@@ -62,6 +70,27 @@ func (s *Service) GetPages(ctx context.Context) (openapi.Pages, error) {
 	}
 
 	return res, nil
+}
+
+func (s *Service) GetFile(ctx context.Context, params openapi.GetFileParams) (openapi.GetFileRes, error) {
+	file, err := s.pages.GetFile(ctx, params.ID, params.FileID)
+	if err != nil {
+		return &openapi.GetFileNotFound{}, nil
+	}
+
+	switch {
+	case file.MimeType == "application/pdf":
+		return &openapi.GetFileOKApplicationPdf{Data: bytes.NewReader(file.Data)}, nil
+
+	case strings.HasPrefix(file.MimeType, "text/plain"):
+		return &openapi.GetFileOKTextPlain{Data: bytes.NewReader(file.Data)}, nil
+
+	case strings.HasPrefix(file.MimeType, "text/html"):
+		return &openapi.GetFileOKTextHTML{Data: bytes.NewReader(file.Data)}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported mimetype: %s", file.MimeType)
+	}
 }
 
 func (s *Service) NewError(_ context.Context, err error) *openapi.ErrorStatusCode {

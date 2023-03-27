@@ -35,7 +35,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.notFound(w, r)
 		return
 	}
-	args := [1]string{}
+	args := [2]string{}
 
 	// Static code generated router with unwrapped path search.
 	switch {
@@ -72,12 +72,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 
 				// Param: "id"
-				// Leaf parameter
-				args[0] = elem
-				elem = ""
+				// Match until "/"
+				idx := strings.IndexByte(elem, '/')
+				if idx < 0 {
+					idx = len(elem)
+				}
+				args[0] = elem[:idx]
+				elem = elem[idx:]
 
 				if len(elem) == 0 {
-					// Leaf node.
 					switch r.Method {
 					case "GET":
 						s.handleGetPageRequest([1]string{
@@ -88,6 +91,34 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					return
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/file/"
+					if l := len("/file/"); len(elem) >= l && elem[0:l] == "/file/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "file_id"
+					// Leaf parameter
+					args[1] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						// Leaf node.
+						switch r.Method {
+						case "GET":
+							s.handleGetFileRequest([2]string{
+								args[0],
+								args[1],
+							}, elemIsEscaped, w, r)
+						default:
+							s.notAllowed(w, r, "GET")
+						}
+
+						return
+					}
 				}
 			}
 		}
@@ -101,7 +132,7 @@ type Route struct {
 	operationID string
 	pathPattern string
 	count       int
-	args        [1]string
+	args        [2]string
 }
 
 // Name returns ogen operation name.
@@ -195,14 +226,17 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				}
 
 				// Param: "id"
-				// Leaf parameter
-				args[0] = elem
-				elem = ""
+				// Match until "/"
+				idx := strings.IndexByte(elem, '/')
+				if idx < 0 {
+					idx = len(elem)
+				}
+				args[0] = elem[:idx]
+				elem = elem[idx:]
 
 				if len(elem) == 0 {
 					switch method {
 					case "GET":
-						// Leaf: GetPage
 						r.name = "GetPage"
 						r.operationID = "getPage"
 						r.pathPattern = "/pages/{id}"
@@ -211,6 +245,34 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 						return r, true
 					default:
 						return
+					}
+				}
+				switch elem[0] {
+				case '/': // Prefix: "/file/"
+					if l := len("/file/"); len(elem) >= l && elem[0:l] == "/file/" {
+						elem = elem[l:]
+					} else {
+						break
+					}
+
+					// Param: "file_id"
+					// Leaf parameter
+					args[1] = elem
+					elem = ""
+
+					if len(elem) == 0 {
+						switch method {
+						case "GET":
+							// Leaf: GetFile
+							r.name = "GetFile"
+							r.operationID = "getFile"
+							r.pathPattern = "/pages/{id}/file/{file_id}"
+							r.args = args
+							r.count = 2
+							return r, true
+						default:
+							return
+						}
 					}
 				}
 			}

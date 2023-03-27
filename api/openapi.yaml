@@ -1,4 +1,4 @@
-openapi: 3.0.1
+openapi: 3.1.0
 info:
   title: Sample API
   description: API description in Markdown.
@@ -68,6 +68,39 @@ paths:
                 $ref: '#/components/schemas/pageWithResults'
         404:
           description: Page not found
+        default:
+          $ref: '#/components/responses/undefinedError'
+
+  /pages/{id}/file/{file_id}:
+    parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - in: path
+        name: file_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getFile
+      description: Get file content
+      responses:
+        200:
+          description: File content
+          content:
+            application/pdf: {}
+            text/plain:
+              schema:
+                type: string
+            text/html:
+              schema:
+                type: string
+        404:
+          description: Page of file not found
         default:
           $ref: '#/components/responses/undefinedError'
 

@@ -69,7 +69,7 @@ func (p *Processors) Process(ctx context.Context, format entity.Format, url stri
 
 	proc, ok := p.processors[format]
 	if !ok {
-		result.Err = fmt.Errorf("no processor registered for format %v", format)
+		result.Err = fmt.Errorf("no processor registered")
 
 		return result
 	}
@@ -86,7 +86,7 @@ func (p *Processors) Process(ctx context.Context, format entity.Format, url stri
 	return result
 }
 
-func (p *Processors) Override(format entity.Format, proc processor) error {
+func (p *Processors) OverrideProcessor(format entity.Format, proc processor) error {
 	p.processors[format] = proc
 
 	return nil

@@ -4,6 +4,7 @@ package openapi
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/go-faster/errors"
@@ -147,6 +148,50 @@ func (s *Format) UnmarshalText(data []byte) error {
 		return errors.Errorf("invalid value: %q", data)
 	}
 }
+
+// GetFileNotFound is response for GetFile operation.
+type GetFileNotFound struct{}
+
+func (*GetFileNotFound) getFileRes() {}
+
+type GetFileOKApplicationPdf struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s GetFileOKApplicationPdf) Read(p []byte) (n int, err error) {
+	return s.Data.Read(p)
+}
+
+func (*GetFileOKApplicationPdf) getFileRes() {}
+
+type GetFileOKTextHTML struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s GetFileOKTextHTML) Read(p []byte) (n int, err error) {
+	return s.Data.Read(p)
+}
+
+func (*GetFileOKTextHTML) getFileRes() {}
+
+type GetFileOKTextPlain struct {
+	Data io.Reader
+}
+
+// Read reads data from the Data reader.
+//
+// Kept to satisfy the io.Reader interface.
+func (s GetFileOKTextPlain) Read(p []byte) (n int, err error) {
+	return s.Data.Read(p)
+}
+
+func (*GetFileOKTextPlain) getFileRes() {}
 
 // GetPageNotFound is response for GetPage operation.
 type GetPageNotFound struct{}

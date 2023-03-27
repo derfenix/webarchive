@@ -22,6 +22,15 @@ func (UnimplementedHandler) AddPage(ctx context.Context, req OptAddPageReq) (r *
 	return r, ht.ErrNotImplemented
 }
 
+// GetFile implements getFile operation.
+//
+// Get file content.
+//
+// GET /pages/{id}/file/{file_id}
+func (UnimplementedHandler) GetFile(ctx context.Context, params GetFileParams) (r GetFileRes, _ error) {
+	return r, ht.ErrNotImplemented
+}
+
 // GetPage implements getPage operation.
 //
 // Get page details.

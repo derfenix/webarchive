@@ -11,21 +11,60 @@ import (
 	"github.com/derfenix/webarchive/entity"
 )
 
-func NewPage(db *badger.DB, file *File) (*Page, error) {
+func NewPage(db *badger.DB) (*Page, error) {
 	return &Page{
 		db:     db,
 		prefix: []byte("page:"),
-		file:   file,
 	}, nil
 }
 
 type Page struct {
 	db     *badger.DB
 	prefix []byte
-	file   *File
 }
 
-func (p *Page) Save(ctx context.Context, site *entity.Page) error {
+func (p *Page) GetFile(_ context.Context, pageID, fileID uuid.UUID) (*entity.File, error) {
+	page := entity.Page{ID: pageID}
+	var file *entity.File
+
+	err := p.db.View(func(txn *badger.Txn) error {
+		data, err := txn.Get(p.key(&page))
+		if err != nil {
+			return fmt.Errorf("get data: %w", err)
+		}
+
+		err = data.Value(func(val []byte) error {
+			if err := unmarshal(val, &page); err != nil {
+				return fmt.Errorf("unmarshal data: %w", err)
+			}
+
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("get value: %w", err)
+		}
+
+		for i := range page.Results.Results() {
+			for j := range page.Results.Results()[i].Files {
+				ff := &page.Results.Results()[i].Files[j]
+
+				if ff.ID == fileID {
+					file = ff
+				}
+			}
+
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("view: %w", err)
+	}
+
+	return file, nil
+}
+
+func (p *Page) Save(_ context.Context, site *entity.Page) error {
 	if p.db.IsClosed() {
 		return ErrDBClosed
 	}
@@ -38,14 +77,6 @@ func (p *Page) Save(ctx context.Context, site *entity.Page) error {
 	if err := p.db.Update(func(txn *badger.Txn) error {
 		if err := txn.Set(p.key(site), marshaled); err != nil {
 			return fmt.Errorf("put data: %w", err)
-		}
-
-		for i, result := range site.Results.Results() {
-			for j, file := range result.Files {
-				if err := p.file.SaveTx(ctx, txn, &file); err != nil {
-					return fmt.Errorf("save file %d (%s) for result %d: %w", j, file.ID.String(), i, err)
-				}
-			}
 		}
 
 		return nil

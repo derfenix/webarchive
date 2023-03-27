@@ -3,6 +3,7 @@
 package openapi
 
 import (
+	"io"
 	"net/http"
 
 	"github.com/go-faster/errors"
@@ -22,6 +23,52 @@ func encodeAddPageResponse(response *Page, w http.ResponseWriter, span trace.Spa
 		return errors.Wrap(err, "write")
 	}
 	return nil
+}
+
+func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *GetFileOKApplicationPdf:
+		w.Header().Set("Content-Type", "application/pdf")
+		w.WriteHeader(200)
+		span.SetStatus(codes.Ok, http.StatusText(200))
+
+		writer := w
+		if _, err := io.Copy(writer, response); err != nil {
+			return errors.Wrap(err, "write")
+		}
+		return nil
+
+	case *GetFileOKTextHTML:
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(200)
+		span.SetStatus(codes.Ok, http.StatusText(200))
+
+		writer := w
+		if _, err := io.Copy(writer, response); err != nil {
+			return errors.Wrap(err, "write")
+		}
+		return nil
+
+	case *GetFileOKTextPlain:
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(200)
+		span.SetStatus(codes.Ok, http.StatusText(200))
+
+		writer := w
+		if _, err := io.Copy(writer, response); err != nil {
+			return errors.Wrap(err, "write")
+		}
+		return nil
+
+	case *GetFileNotFound:
+		w.WriteHeader(404)
+		span.SetStatus(codes.Error, http.StatusText(404))
+
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
+	}
 }
 
 func encodeGetPageResponse(response GetPageRes, w http.ResponseWriter, span trace.Span) error {

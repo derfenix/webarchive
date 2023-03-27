@@ -24,18 +24,23 @@ func PageToRestWithResults(page *entity.Page) openapi.PageWithResults {
 			results := make([]openapi.Result, len(page.Results.Results()))
 
 			for i := range results {
-				result := &page.Results.Results()[i]
+				result := &(page.Results.Results())[i]
+
+				errText := openapi.OptString{}
+				if result.Err != nil {
+					errText = openapi.NewOptString(result.Err.Error())
+				}
 
 				results[i] = openapi.Result{
 					Format: FormatToRest(result.Format),
-					Error:  openapi.NewOptString(result.Err.Error()),
+					Error:  errText,
 					Files: func() []openapi.ResultFilesItem {
-						files := make([]openapi.ResultFilesItem, len(results[i].Files))
+						files := make([]openapi.ResultFilesItem, len(result.Files))
 
 						for j := range files {
 							file := &result.Files[j]
 
-							files[i] = openapi.ResultFilesItem{
+							files[j] = openapi.ResultFilesItem{
 								ID:       file.ID,
 								Name:     file.Name,
 								Mimetype: file.MimeType,

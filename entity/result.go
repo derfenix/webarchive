@@ -22,12 +22,14 @@ func (r *Results) MarshalMsgpack() ([]byte, error) {
 }
 
 func (r *Results) UnmarshalMsgpack(b []byte) error {
-	return msgpack.Unmarshal(b, r.results)
+	return msgpack.Unmarshal(b, &r.results)
 }
 
 func (r *Results) Add(result Result) {
 	r.mu.Lock()
-	r.results = append(r.results, result)
+	results := r.results
+	results = append(results, result)
+	r.results = results
 	r.mu.Unlock()
 }
 

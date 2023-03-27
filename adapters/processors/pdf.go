@@ -29,8 +29,9 @@ func (P *PDF) Process(_ context.Context, url string) ([]entity.File, error) {
 	gen.Title.Set(url)
 
 	page := wkhtmltopdf.NewPage(url)
+	page.PrintMediaType.Set(true)
 	page.JavascriptDelay.Set(200)
-	page.LoadMediaErrorHandling.Set("abort")
+	page.LoadMediaErrorHandling.Set("ignore")
 	page.FooterRight.Set("[page]")
 	page.HeaderLeft.Set(url)
 	page.HeaderRight.Set(time.Now().Format(time.DateOnly))

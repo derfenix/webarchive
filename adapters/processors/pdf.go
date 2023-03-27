@@ -41,7 +41,6 @@ func (P *PDF) Process(_ context.Context, url string) ([]entity.File, error) {
 
 	gen.AddPage(page)
 
-	// Create PDF document in internal buffer
 	err = gen.Create()
 	if err != nil {
 		return nil, fmt.Errorf("create pdf: %w", err)

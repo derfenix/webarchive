@@ -39,14 +39,14 @@ in case of any conflicts.
 
 ## Usage
 
-#### 1. Start the server
+### 1. Start the server
 
-##### Start without docker
+#### Start without docker
 ```shell
 go run ./cmd/server/main.go
 ```
 
-##### Change API address
+#### Change API address
 ```shell
 API_ADDRESS=127.0.0.1:3001 go run ./cmd/server/main.go
 ```
@@ -57,7 +57,7 @@ API_ADDRESS=127.0.0.1:3001 go run ./cmd/server/main.go
 docker compose up -d webarchive
 ```
 
-#### 2. Add a page
+### 2. Add a page
 
 ```shell
 curl -X POST --location "http://localhost:5001/pages" \
@@ -78,7 +78,7 @@ curl -X POST --location \
   "http://localhost:5001/pages?url=https%3A%2F%2Fgithub.com%2Fwkhtmltopdf%2Fwkhtmltopdf%2Fissues%2F1937&formats=pdf%2Cheaders&description=Foo+Bar"
 ```
 
-#### 3. Get the page's info
+### 3. Get the page's info
 
 ```shell
 curl -X GET --location "http://localhost:5001/pages/$page_id" | jq .
@@ -87,7 +87,7 @@ where `$page_id` — value of the `id` field from previous command response.
 If `status` field in response is `success` (or `with_errors`) - the `results` field
 will contain all processed formats with ids of the stored files.
 
-#### 4. Open file in browser
+### 4. Open file in browser
 
 ```shell
 xdg-open "http://localhost:5001/pages/$page_id/file/$file_id"
@@ -95,13 +95,13 @@ xdg-open "http://localhost:5001/pages/$page_id/file/$file_id"
 Where  `$page_id` — value of the `id` field from previous command response, and
 `$file_id` — the id of interesting file.
 
-#### 5. List all stored pages
+### 5. List all stored pages
 
 ```shell
 curl -X GET --location "http://localhost:5001/pages" | jq .
 ```
 
-### Roadmap
+## Roadmap
 
 - [x] Save page to pdf 
 - [x] Save URL headers

@@ -10,13 +10,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/derfenix/webarchive/application"
+	"github.com/derfenix/webarchive/config"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
-	cfg, err := application.NewConfig(ctx)
+	cfg, err := config.NewConfig(ctx)
 	if err != nil {
 		fmt.Printf("failed to init config: %s", err.Error())
 		os.Exit(2)

@@ -18,11 +18,12 @@ import (
 	"github.com/derfenix/webarchive/adapters/processors"
 	badgerRepo "github.com/derfenix/webarchive/adapters/repository/badger"
 	"github.com/derfenix/webarchive/api/openapi"
+	"github.com/derfenix/webarchive/config"
 	"github.com/derfenix/webarchive/entity"
 	"github.com/derfenix/webarchive/ports/rest"
 )
 
-func NewApplication(cfg Config) (Application, error) {
+func NewApplication(cfg config.Config) (Application, error) {
 	log, err := newLogger(cfg.Logging)
 	if err != nil {
 		return Application{}, fmt.Errorf("new logger: %w", err)
@@ -38,7 +39,7 @@ func NewApplication(cfg Config) (Application, error) {
 		return Application{}, fmt.Errorf("new page repo: %w", err)
 	}
 
-	processor, err := processors.NewProcessors()
+	processor, err := processors.NewProcessors(cfg)
 	if err != nil {
 		return Application{}, fmt.Errorf("new processors: %w", err)
 	}
@@ -73,7 +74,7 @@ func NewApplication(cfg Config) (Application, error) {
 	}
 
 	httpServer := http.Server{
-		Addr:              "0.0.0.0:5001",
+		Addr:              cfg.API.Address,
 		Handler:           server,
 		ReadTimeout:       time.Second * 15,
 		ReadHeaderTimeout: time.Second * 5,
@@ -94,7 +95,7 @@ func NewApplication(cfg Config) (Application, error) {
 }
 
 type Application struct {
-	cfg        Config
+	cfg        config.Config
 	log        *zap.Logger
 	db         *badger.DB
 	processor  entity.Processor
@@ -165,7 +166,7 @@ func (a *Application) Stop() error {
 	return errs
 }
 
-func newLogger(cfg Logging) (*zap.Logger, error) {
+func newLogger(cfg config.Logging) (*zap.Logger, error) {
 	logCfg := zap.NewProductionConfig()
 	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	logCfg.EncoderConfig.EncodeDuration = zapcore.NanosDurationEncoder

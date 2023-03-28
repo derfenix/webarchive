@@ -8,6 +8,7 @@ import (
 	"net/http/cookiejar"
 	"time"
 
+	"github.com/derfenix/webarchive/config"
 	"github.com/derfenix/webarchive/entity"
 )
 
@@ -15,7 +16,7 @@ type processor interface {
 	Process(ctx context.Context, url string) ([]entity.File, error)
 }
 
-func NewProcessors() (*Processors, error) {
+func NewProcessors(cfg config.Config) (*Processors, error) {
 	jar, err := cookiejar.New(&cookiejar.Options{
 		PublicSuffixList: nil,
 	})
@@ -53,7 +54,7 @@ func NewProcessors() (*Processors, error) {
 	procs := Processors{
 		processors: map[entity.Format]processor{
 			entity.FormatHeaders: NewHeaders(httpClient),
-			entity.FormatPDF:     NewPDF(),
+			entity.FormatPDF:     NewPDF(cfg.PDF),
 		},
 	}
 

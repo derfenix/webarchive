@@ -97,4 +97,4 @@ curl -X GET --location "http://localhost:5001/pages" | jq .
 - [ ] Save page to html with separate resource files (?)
 - [ ] Optional authentication
 - [ ] Multi-user access
-- [ ] Support PostgreSQL
+- [ ] Support SQL database with or without separate files storage

@@ -27,9 +27,7 @@ func (r *Results) UnmarshalMsgpack(b []byte) error {
 
 func (r *Results) Add(result Result) {
 	r.mu.Lock()
-	results := r.results
-	results = append(results, result)
-	r.results = results
+	r.results = append(r.results, result)
 	r.mu.Unlock()
 }
 

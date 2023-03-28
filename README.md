@@ -41,8 +41,20 @@ in case of any conflicts.
 
 #### 1. Start the server
 
+##### Start without docker
 ```shell
 go run ./cmd/server/main.go
+```
+
+##### Change API address
+```shell
+API_ADDRESS=127.0.0.1:3001 go run ./cmd/server/main.go
+```
+
+#### Start in docker
+
+```shell
+docker compose up -d webarchive
 ```
 
 #### 2. Add a page

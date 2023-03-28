@@ -23,9 +23,17 @@ curl -X POST --location "http://localhost:5001/pages" \
     -d "{
           \"url\": \"https://github.com/wkhtmltopdf/wkhtmltopdf/issues/1937\",
           \"formats\": [
-            \"all\"
+            \"pdf\",
+            \"headers\"
           ]
         }" | jq .
+```
+
+or
+
+```shell
+curl -X POST --location \
+  "http://localhost:5001/pages?url=https%3A%2F%2Fgithub.com%2Fwkhtmltopdf%2Fwkhtmltopdf%2Fissues%2F1937&formats=pdf%2Cheaders&description=Foo+Bar"
 ```
 
 #### 3. Get the page's info

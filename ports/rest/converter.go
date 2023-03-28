@@ -98,11 +98,7 @@ func FormatFromRest(format []openapi.Format) []entity.Format {
 
 	switch {
 	case len(format) == 0 || (len(format) == 1 && format[0] == openapi.FormatAll):
-		formats = []entity.Format{
-			entity.FormatHeaders,
-			entity.FormatPDF,
-			entity.FormatSingleFile,
-		}
+		formats = entity.AllFormats
 
 	default:
 		formats = make([]entity.Format, len(format))

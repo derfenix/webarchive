@@ -3,6 +3,7 @@
 package openapi
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 
@@ -15,6 +16,196 @@ import (
 	"github.com/ogen-go/ogen/uri"
 	"github.com/ogen-go/ogen/validate"
 )
+
+// AddPageParams is parameters of addPage operation.
+type AddPageParams struct {
+	URL         OptString
+	Description OptString
+	Formats     []Format
+}
+
+func unpackAddPageParams(packed middleware.Parameters) (params AddPageParams) {
+	{
+		key := middleware.ParameterKey{
+			Name: "url",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.URL = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "description",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Description = v.(OptString)
+		}
+	}
+	{
+		key := middleware.ParameterKey{
+			Name: "formats",
+			In:   "query",
+		}
+		if v, ok := packed[key]; ok {
+			params.Formats = v.([]Format)
+		}
+	}
+	return params
+}
+
+func decodeAddPageParams(args [0]string, argsEscaped bool, r *http.Request) (params AddPageParams, _ error) {
+	q := uri.NewQueryDecoder(r.URL.Query())
+	// Decode query: url.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "url",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotURLVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotURLVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.URL.SetTo(paramsDotURLVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "url",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: description.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "description",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				var paramsDotDescriptionVal string
+				if err := func() error {
+					val, err := d.DecodeValue()
+					if err != nil {
+						return err
+					}
+
+					c, err := conv.ToString(val)
+					if err != nil {
+						return err
+					}
+
+					paramsDotDescriptionVal = c
+					return nil
+				}(); err != nil {
+					return err
+				}
+				params.Description.SetTo(paramsDotDescriptionVal)
+				return nil
+			}); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "description",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	// Decode query: formats.
+	if err := func() error {
+		cfg := uri.QueryParameterDecodingConfig{
+			Name:    "formats",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.HasParam(cfg); err == nil {
+			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				return d.DecodeArray(func(d uri.Decoder) error {
+					var paramsDotFormatsVal Format
+					if err := func() error {
+						val, err := d.DecodeValue()
+						if err != nil {
+							return err
+						}
+
+						c, err := conv.ToString(val)
+						if err != nil {
+							return err
+						}
+
+						paramsDotFormatsVal = Format(c)
+						return nil
+					}(); err != nil {
+						return err
+					}
+					params.Formats = append(params.Formats, paramsDotFormatsVal)
+					return nil
+				})
+			}); err != nil {
+				return err
+			}
+			if err := func() error {
+				var failures []validate.FieldError
+				for i, elem := range params.Formats {
+					if err := func() error {
+						if err := elem.Validate(); err != nil {
+							return err
+						}
+						return nil
+					}(); err != nil {
+						failures = append(failures, validate.FieldError{
+							Name:  fmt.Sprintf("[%d]", i),
+							Error: err,
+						})
+					}
+				}
+				if len(failures) > 0 {
+					return &validate.Error{Fields: failures}
+				}
+				return nil
+			}(); err != nil {
+				return err
+			}
+		}
+		return nil
+	}(); err != nil {
+		return params, &ogenerrors.DecodeParamError{
+			Name: "formats",
+			In:   "query",
+			Err:  err,
+		}
+	}
+	return params, nil
+}
 
 // GetFileParams is parameters of getFile operation.
 type GetFileParams struct {

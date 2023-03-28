@@ -60,6 +60,16 @@ func (s *Server) handleAddPageRequest(args [0]string, argsEscaped bool, w http.R
 			ID:   "addPage",
 		}
 	)
+	params, err := decodeAddPageParams(args, argsEscaped, r)
+	if err != nil {
+		err = &ogenerrors.DecodeParamsError{
+			OperationContext: opErrContext,
+			Err:              err,
+		}
+		recordError("DecodeParams", err)
+		s.cfg.ErrorHandler(ctx, w, r, err)
+		return
+	}
 	request, close, err := s.decodeAddPageRequest(r)
 	if err != nil {
 		err = &ogenerrors.DecodeRequestError{
@@ -83,13 +93,26 @@ func (s *Server) handleAddPageRequest(args [0]string, argsEscaped bool, w http.R
 			OperationName: "AddPage",
 			OperationID:   "addPage",
 			Body:          request,
-			Params:        middleware.Parameters{},
-			Raw:           r,
+			Params: middleware.Parameters{
+				{
+					Name: "url",
+					In:   "query",
+				}: params.URL,
+				{
+					Name: "description",
+					In:   "query",
+				}: params.Description,
+				{
+					Name: "formats",
+					In:   "query",
+				}: params.Formats,
+			},
+			Raw: r,
 		}
 
 		type (
 			Request  = OptAddPageReq
-			Params   = struct{}
+			Params   = AddPageParams
 			Response = *Page
 		)
 		response, err = middleware.HookMiddleware[
@@ -99,14 +122,14 @@ func (s *Server) handleAddPageRequest(args [0]string, argsEscaped bool, w http.R
 		](
 			m,
 			mreq,
-			nil,
+			unpackAddPageParams,
 			func(ctx context.Context, request Request, params Params) (response Response, err error) {
-				response, err = s.h.AddPage(ctx, request)
+				response, err = s.h.AddPage(ctx, request, params)
 				return response, err
 			},
 		)
 	} else {
-		response, err = s.h.AddPage(ctx, request)
+		response, err = s.h.AddPage(ctx, request, params)
 	}
 	if err != nil {
 		recordError("Internal", err)

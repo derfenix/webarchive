@@ -41,8 +41,26 @@ func (s *Service) GetPage(ctx context.Context, params openapi.GetPageParams) (op
 	return &restPage, nil
 }
 
-func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq) (*openapi.Page, error) {
-	page := entity.NewPage(req.Value.URL, req.Value.Description.Value, FormatFromRest(req.Value.Formats)...)
+func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq, params openapi.AddPageParams) (*openapi.Page, error) {
+	url := params.URL.Or(req.Value.URL)
+	description := params.Description.Or(req.Value.Description.Value)
+
+	formats := req.Value.Formats
+	if len(formats) == 0 {
+		formats = params.Formats
+	}
+	if len(formats) == 0 {
+		formats = []openapi.Format{"all"}
+	}
+
+	switch {
+	case req.Value.URL != "":
+		url = req.Value.URL
+	case params.URL.IsSet():
+		url = params.URL.Value
+	}
+
+	page := entity.NewPage(url, description, FormatFromRest(formats)...)
 
 	page.Status = entity.StatusProcessing
 

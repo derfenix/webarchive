@@ -13,7 +13,7 @@ type Handler interface {
 	// Add new page.
 	//
 	// POST /pages
-	AddPage(ctx context.Context, req OptAddPageReq) (*Page, error)
+	AddPage(ctx context.Context, req OptAddPageReq, params AddPageParams) (*Page, error)
 	// GetFile implements getFile operation.
 	//
 	// Get file content.

@@ -76,13 +76,13 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // Add new page.
 //
 // POST /pages
-func (c *Client) AddPage(ctx context.Context, request OptAddPageReq) (*Page, error) {
-	res, err := c.sendAddPage(ctx, request)
+func (c *Client) AddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (*Page, error) {
+	res, err := c.sendAddPage(ctx, request, params)
 	_ = res
 	return res, err
 }
 
-func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq) (res *Page, err error) {
+func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (res *Page, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("addPage"),
 	}
@@ -134,6 +134,67 @@ func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq) (res *P
 	var pathParts [1]string
 	pathParts[0] = "/pages"
 	uri.AddPathParts(u, pathParts[:]...)
+
+	stage = "EncodeQueryParams"
+	q := uri.NewQueryEncoder()
+	{
+		// Encode "url" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "url",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.URL.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "description" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "description",
+			Style:   uri.QueryStyleForm,
+			Explode: true,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			if val, ok := params.Description.Get(); ok {
+				return e.EncodeValue(conv.StringToString(val))
+			}
+			return nil
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	{
+		// Encode "formats" parameter.
+		cfg := uri.QueryParameterEncodingConfig{
+			Name:    "formats",
+			Style:   uri.QueryStyleForm,
+			Explode: false,
+		}
+
+		if err := q.EncodeParam(cfg, func(e uri.Encoder) error {
+			return e.EncodeArray(func(e uri.Encoder) error {
+				for i, item := range params.Formats {
+					if err := func() error {
+						return e.EncodeValue(conv.StringToString(string(item)))
+					}(); err != nil {
+						return errors.Wrapf(err, "[%d]", i)
+					}
+				}
+				return nil
+			})
+		}); err != nil {
+			return res, errors.Wrap(err, "encode query")
+		}
+	}
+	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
 	r, err := ht.NewRequest(ctx, "POST", u, nil)

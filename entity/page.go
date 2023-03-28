@@ -21,6 +21,12 @@ const (
 	FormatPDF
 )
 
+var AllFormats = []Format{
+	FormatHeaders,
+	FormatPDF,
+	FormatSingleFile,
+}
+
 type Status uint8
 
 const (

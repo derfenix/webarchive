@@ -18,7 +18,7 @@ var _ Handler = UnimplementedHandler{}
 // Add new page.
 //
 // POST /pages
-func (UnimplementedHandler) AddPage(ctx context.Context, req OptAddPageReq) (r *Page, _ error) {
+func (UnimplementedHandler) AddPage(ctx context.Context, req OptAddPageReq, params AddPageParams) (r *Page, _ error) {
 	return r, ht.ErrNotImplemented
 }
 

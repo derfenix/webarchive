@@ -7,6 +7,18 @@ Aimed to be a simple, fast and easy-to-use webarchive for personal or home-net u
 * Golang 1.19 or higher
 * wkhtmltopdf binary in $PATH (to save pages in pdf)
 
+## Configuration
+
+The service can be configured via environment variables. There is a list of available
+variables:
+
+* **DB_PATH** — path for the database files (default `./db`)
+* **LOGGING_DEBUG** — enable debug logs (default `false`)
+
+
+*Note*: Prefix **WEBARCHIVE_** can be used with the environment variable names 
+in case of any conflicts.
+
 ## Usage
 
 #### 1. Start the server

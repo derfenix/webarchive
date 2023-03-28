@@ -110,7 +110,7 @@ func FormatFromRest(format []openapi.Format) []entity.Format {
 			case openapi.FormatHeaders:
 				formats[i] = entity.FormatHeaders
 
-			case openapi.FormatSinglePage:
+			case openapi.FormatSingleFile:
 				formats[i] = entity.FormatSingleFile
 			}
 		}
@@ -124,7 +124,7 @@ func FormatToRest(format entity.Format) openapi.Format {
 	case entity.FormatPDF:
 		return openapi.FormatPdf
 	case entity.FormatSingleFile:
-		return openapi.FormatSinglePage
+		return openapi.FormatSingleFile
 	case entity.FormatHeaders:
 		return openapi.FormatHeaders
 	default:

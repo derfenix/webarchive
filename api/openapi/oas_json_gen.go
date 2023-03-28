@@ -289,8 +289,8 @@ func (s *Format) Decode(d *jx.Decoder) error {
 		*s = FormatAll
 	case FormatPdf:
 		*s = FormatPdf
-	case FormatSinglePage:
-		*s = FormatSinglePage
+	case FormatSingleFile:
+		*s = FormatSingleFile
 	case FormatHeaders:
 		*s = FormatHeaders
 	default:

@@ -135,7 +135,7 @@ components:
       enum:
         - all
         - pdf
-        - single_page
+        - single_file
         - headers
     error:
       type: object

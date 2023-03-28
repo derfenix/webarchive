@@ -109,7 +109,7 @@ type Format string
 const (
 	FormatAll        Format = "all"
 	FormatPdf        Format = "pdf"
-	FormatSinglePage Format = "single_page"
+	FormatSingleFile Format = "single_file"
 	FormatHeaders    Format = "headers"
 )
 
@@ -120,7 +120,7 @@ func (s Format) MarshalText() ([]byte, error) {
 		return []byte(s), nil
 	case FormatPdf:
 		return []byte(s), nil
-	case FormatSinglePage:
+	case FormatSingleFile:
 		return []byte(s), nil
 	case FormatHeaders:
 		return []byte(s), nil
@@ -138,8 +138,8 @@ func (s *Format) UnmarshalText(data []byte) error {
 	case FormatPdf:
 		*s = FormatPdf
 		return nil
-	case FormatSinglePage:
-		*s = FormatSinglePage
+	case FormatSingleFile:
+		*s = FormatSingleFile
 		return nil
 	case FormatHeaders:
 		*s = FormatHeaders

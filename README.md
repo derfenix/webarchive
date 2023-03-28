@@ -6,7 +6,7 @@ Aimed to be a simple, fast and easy-to-use webarchive for personal or home-net u
 
 * **headers** — save all headers from response
 * **pdf** — save page in pdf
-* **single_file** — save html and all its resources (css,js,images) into one html file
+* **single_file** — save html and all its resources (css,js,images) into one html file (not ready yet)
 
 ## Requirements 
 

@@ -62,6 +62,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/page'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    nullable: false
+                  error:
+                    type: string
+                    nullable: false
+                required:
+                  - error
+                  - field
         default:
           $ref: '#/components/responses/undefinedError'
 
@@ -109,7 +125,7 @@ paths:
         200:
           description: File content
           content:
-            application/pdf: {}
+            application/pdf: { }
             text/plain:
               schema:
                 type: string

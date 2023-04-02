@@ -12,17 +12,35 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func encodeAddPageResponse(response *Page, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(201)
-	span.SetStatus(codes.Ok, http.StatusText(201))
+func encodeAddPageResponse(response AddPageRes, w http.ResponseWriter, span trace.Span) error {
+	switch response := response.(type) {
+	case *Page:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(201)
+		span.SetStatus(codes.Ok, http.StatusText(201))
 
-	e := jx.GetEncoder()
-	response.Encode(e)
-	if _, err := e.WriteTo(w); err != nil {
-		return errors.Wrap(err, "write")
+		e := jx.GetEncoder()
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+		return nil
+
+	case *AddPageBadRequest:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		span.SetStatus(codes.Error, http.StatusText(400))
+
+		e := jx.GetEncoder()
+		response.Encode(e)
+		if _, err := e.WriteTo(w); err != nil {
+			return errors.Wrap(err, "write")
+		}
+		return nil
+
+	default:
+		return errors.Errorf("unexpected response type: %T", response)
 	}
-	return nil
 }
 
 func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trace.Span) error {

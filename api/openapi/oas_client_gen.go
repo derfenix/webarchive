@@ -76,13 +76,13 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // Add new page.
 //
 // POST /pages
-func (c *Client) AddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (*Page, error) {
+func (c *Client) AddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (AddPageRes, error) {
 	res, err := c.sendAddPage(ctx, request, params)
 	_ = res
 	return res, err
 }
 
-func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (res *Page, err error) {
+func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (res AddPageRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("addPage"),
 	}

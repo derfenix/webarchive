@@ -41,7 +41,7 @@ func (s *Service) GetPage(ctx context.Context, params openapi.GetPageParams) (op
 	return &restPage, nil
 }
 
-func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq, params openapi.AddPageParams) (*openapi.Page, error) {
+func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq, params openapi.AddPageParams) (openapi.AddPageRes, error) {
 	url := params.URL.Or(req.Value.URL)
 	description := params.Description.Or(req.Value.Description.Value)
 
@@ -60,18 +60,31 @@ func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq, params
 		url = params.URL.Value
 	}
 
-	page := entity.NewPage(url, description, FormatFromRest(formats)...)
+	if url == "" {
+		return &openapi.AddPageBadRequest{
+			Field: "url",
+			Error: "Value is required",
+		}, nil
+	}
 
+	domainFormats, err := FormatFromRest(formats)
+	if err != nil {
+		return &openapi.AddPageBadRequest{
+			Field: "formats",
+			Error: err.Error(),
+		}, nil
+	}
+
+	page := entity.NewPage(url, description, domainFormats...)
 	page.Status = entity.StatusProcessing
 
-	err := s.pages.Save(ctx, page)
-	if err != nil {
+	if err := s.pages.Save(ctx, page); err != nil {
 		return nil, fmt.Errorf("save page: %w", err)
 	}
 
-	s.ch <- page
-
 	res := PageToRest(page)
+
+	s.ch <- page
 
 	return &res, nil
 }

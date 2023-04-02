@@ -15,6 +15,33 @@ func (s *ErrorStatusCode) Error() string {
 	return fmt.Sprintf("code %d: %+v", s.StatusCode, s.Response)
 }
 
+type AddPageBadRequest struct {
+	Field string `json:"field"`
+	Error string `json:"error"`
+}
+
+// GetField returns the value of Field.
+func (s *AddPageBadRequest) GetField() string {
+	return s.Field
+}
+
+// GetError returns the value of Error.
+func (s *AddPageBadRequest) GetError() string {
+	return s.Error
+}
+
+// SetField sets the value of Field.
+func (s *AddPageBadRequest) SetField(val string) {
+	s.Field = val
+}
+
+// SetError sets the value of Error.
+func (s *AddPageBadRequest) SetError(val string) {
+	s.Error = val
+}
+
+func (*AddPageBadRequest) addPageRes() {}
+
 type AddPageReq struct {
 	URL         string    `json:"url"`
 	Description OptString `json:"description"`
@@ -348,6 +375,8 @@ func (s *Page) SetFormats(val []Format) {
 func (s *Page) SetStatus(val Status) {
 	s.Status = val
 }
+
+func (*Page) addPageRes() {}
 
 // Merged schema.
 // Ref: #/components/schemas/pageWithResults

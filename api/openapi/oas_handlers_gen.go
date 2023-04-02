@@ -86,7 +86,7 @@ func (s *Server) handleAddPageRequest(args [0]string, argsEscaped bool, w http.R
 		}
 	}()
 
-	var response *Page
+	var response AddPageRes
 	if m := s.cfg.Middleware; m != nil {
 		mreq := middleware.Request{
 			Context:       ctx,
@@ -113,7 +113,7 @@ func (s *Server) handleAddPageRequest(args [0]string, argsEscaped bool, w http.R
 		type (
 			Request  = OptAddPageReq
 			Params   = AddPageParams
-			Response = *Page
+			Response = AddPageRes
 		)
 		response, err = middleware.HookMiddleware[
 			Request,

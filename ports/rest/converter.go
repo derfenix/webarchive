@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"fmt"
+
 	"github.com/derfenix/webarchive/api/openapi"
 	"github.com/derfenix/webarchive/entity"
 )
@@ -93,7 +95,7 @@ func StatusToRest(s entity.Status) openapi.Status {
 	}
 }
 
-func FormatFromRest(format []openapi.Format) []entity.Format {
+func FormatFromRest(format []openapi.Format) ([]entity.Format, error) {
 	var formats []entity.Format
 
 	switch {
@@ -112,11 +114,14 @@ func FormatFromRest(format []openapi.Format) []entity.Format {
 
 			case openapi.FormatSingleFile:
 				formats[i] = entity.FormatSingleFile
+
+			default:
+				return nil, fmt.Errorf("invalid format value %s", format)
 			}
 		}
 	}
 
-	return formats
+	return formats, nil
 }
 
 func FormatToRest(format entity.Format) openapi.Format {

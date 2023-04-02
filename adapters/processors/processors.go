@@ -53,8 +53,9 @@ func NewProcessors(cfg config.Config) (*Processors, error) {
 
 	procs := Processors{
 		processors: map[entity.Format]processor{
-			entity.FormatHeaders: NewHeaders(httpClient),
-			entity.FormatPDF:     NewPDF(cfg.PDF),
+			entity.FormatHeaders:    NewHeaders(httpClient),
+			entity.FormatPDF:        NewPDF(cfg.PDF),
+			entity.FormatSingleFile: NewSingleFile(httpClient),
 		},
 	}
 

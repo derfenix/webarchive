@@ -6,7 +6,7 @@ Aimed to be a simple, fast and easy-to-use webarchive for personal or home-net u
 
 * **headers** — save all headers from response
 * **pdf** — save page in pdf
-* **single_file** — save html and all its resources (css,js,images) into one html file (not ready yet)
+* **single_file** — save html and all its resources (css,js,images) into one html file
 
 ## Requirements 
 
@@ -105,7 +105,7 @@ curl -X GET --location "http://localhost:5001/pages" | jq .
 
 - [x] Save page to pdf 
 - [x] Save URL headers
-- [ ] Save page to the single-page html
+- [x] Save page to the single-page html
 - [ ] Save page to html with separate resource files (?)
 - [ ] Optional authentication
 - [ ] Multi-user access

@@ -33,6 +33,10 @@ func (h *Headers) Process(ctx context.Context, url string) ([]entity.File, error
 		return nil, fmt.Errorf("call url: %w", doErr)
 	}
 
+	if resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+
 	headersFile, err = h.newFile(resp.Header)
 
 	if err != nil {

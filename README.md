@@ -107,6 +107,7 @@ curl -X GET --location "http://localhost:5001/pages" | jq .
 - [x] Save URL headers
 - [x] Save page to the single-page html
 - [ ] Save page to html with separate resource files (?)
+- [ ] Basic web UI
 - [ ] Optional authentication
 - [ ] Multi-user access
 - [ ] Support SQL database with or without separate files storage

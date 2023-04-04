@@ -28,6 +28,7 @@ type Config struct {
 	DB      DB      `env:",prefix=DB_"`
 	Logging Logging `env:",prefix=LOGGING_"`
 	API     API     `env:",prefix=API_"`
+	UI      UI      `env:",prefix=UI_"`
 	PDF     PDF     `env:",prefix=PDF_"`
 }
 
@@ -42,7 +43,13 @@ type PDF struct {
 }
 
 type API struct {
+	Prefix  string `env:"PREFIX,default=/"`
 	Address string `env:"ADDRESS,default=0.0.0.0:5001"`
+}
+
+type UI struct {
+	Enabled bool   `env:"ENABLED,default=true"`
+	Prefix  string `env:"PREFIX,default=/"`
 }
 
 type DB struct {

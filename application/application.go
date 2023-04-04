@@ -73,9 +73,25 @@ func NewApplication(cfg config.Config) (Application, error) {
 		return Application{}, fmt.Errorf("new rest server: %w", err)
 	}
 
+	var httpHandler http.Handler = server
+
+	if cfg.UI.Enabled {
+		ui := rest.NewUI(cfg.UI)
+
+		httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if ui.IsUIRequest(r) {
+				ui.ServeHTTP(w, r)
+
+				return
+			}
+
+			server.ServeHTTP(w, r)
+		})
+	}
+
 	httpServer := http.Server{
 		Addr:              cfg.API.Address,
-		Handler:           server,
+		Handler:           httpHandler,
 		ReadTimeout:       time.Second * 15,
 		ReadHeaderTimeout: time.Second * 5,
 		IdleTimeout:       time.Second * 30,

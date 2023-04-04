@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>WebArchive</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/lib.js"></script>
+    <script src="/static/main.js"></script>
+</head>
+<body>
+<template id="pages_tmpl">
+    <div class="page_item">
+        <a class="url link"><span class="title"></span><span class="status"></span></a>
+        <div class="description"></div>
+        <div class="created"></div>
+        <hr>
+    </div>
+</template>
+
+<template id="page_tmpl">
+    <a onclick="history.back()" class="link">Back</a>
+    <div class="page">
+        <h2 id="page_title"></h2>
+        <h3 id="page_description"></h3>
+        <h5 id="page_url" class="link" onclick="window.open(this.innerHTML, '_blank')"></h5>
+        <h4>Results</h4>
+        <div id="results"></div>
+    </div>
+</template>
+
+<template id="result_tmpl">
+    <div class="result_item">
+        <span class="format"></span>
+        <span class="result_link link"></span>
+    </div>
+</template>
+
+<h1 id="site_title"></h1>
+
+<div id="data">
+    None
+</div>
+</body>
+</html>
+

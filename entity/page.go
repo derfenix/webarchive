@@ -11,6 +11,7 @@ import (
 
 type Processor interface {
 	Process(ctx context.Context, format Format, url string) Result
+	GetMeta(ctx context.Context, url string) (Meta, error)
 }
 
 type Format uint8
@@ -37,6 +38,12 @@ const (
 	StatusWithErrors
 )
 
+type Meta struct {
+	Title       string
+	Description string
+	Error       string
+}
+
 func NewPage(url string, description string, formats ...Format) *Page {
 	return &Page{
 		ID:          uuid.New(),
@@ -57,6 +64,7 @@ type Page struct {
 	Results     Results
 	Version     uint16
 	Status      Status
+	Meta        Meta
 }
 
 func (p *Page) SetProcessing() {

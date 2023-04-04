@@ -64,18 +64,18 @@ func (p *Page) GetFile(_ context.Context, pageID, fileID uuid.UUID) (*entity.Fil
 	return file, nil
 }
 
-func (p *Page) Save(_ context.Context, site *entity.Page) error {
+func (p *Page) Save(_ context.Context, page *entity.Page) error {
 	if p.db.IsClosed() {
 		return ErrDBClosed
 	}
 
-	marshaled, err := marshal(site)
+	marshaled, err := marshal(page)
 	if err != nil {
 		return fmt.Errorf("marshal data: %w", err)
 	}
 
 	if err := p.db.Update(func(txn *badger.Txn) error {
-		if err := txn.Set(p.key(site), marshaled); err != nil {
+		if err := txn.Set(p.key(page), marshaled); err != nil {
 			return fmt.Errorf("put data: %w", err)
 		}
 
@@ -151,6 +151,64 @@ func (p *Page) ListAll(ctx context.Context) ([]*entity.Page, error) {
 				Formats:     page.Formats,
 				Version:     page.Version,
 				Status:      page.Status,
+				Meta:        page.Meta,
+			})
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("view: %w", err)
+	}
+
+	sort.Slice(pages, func(i, j int) bool {
+		return pages[i].Created.After(pages[j].Created)
+	})
+
+	return pages, nil
+}
+
+func (p *Page) ListUnprocessed(ctx context.Context) ([]*entity.Page, error) {
+	pages := make([]*entity.Page, 0, 100)
+
+	err := p.db.View(func(txn *badger.Txn) error {
+		iterator := txn.NewIterator(badger.DefaultIteratorOptions)
+
+		defer iterator.Close()
+
+		for iterator.Seek(p.prefix); iterator.ValidForPrefix(p.prefix); iterator.Next() {
+			if err := ctx.Err(); err != nil {
+				return fmt.Errorf("context canceled: %w", err)
+			}
+
+			var page entity.Page
+
+			err := iterator.Item().Value(func(val []byte) error {
+				if err := unmarshal(val, &page); err != nil {
+					return fmt.Errorf("unmarshal: %w", err)
+				}
+
+				return nil
+			})
+
+			if err != nil {
+				return fmt.Errorf("get item: %w", err)
+			}
+
+			if page.Status != entity.StatusProcessing {
+				continue
+			}
+
+			pages = append(pages, &entity.Page{
+				ID:          page.ID,
+				URL:         page.URL,
+				Description: page.Description,
+				Created:     page.Created,
+				Formats:     page.Formats,
+				Version:     page.Version,
+				Status:      page.Status,
+				Meta:        page.Meta,
 			})
 		}
 

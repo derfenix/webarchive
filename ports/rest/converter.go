@@ -2,6 +2,7 @@ package rest
 
 import (
 	"fmt"
+	"html"
 
 	"github.com/derfenix/webarchive/api/openapi"
 	"github.com/derfenix/webarchive/entity"
@@ -22,6 +23,11 @@ func PageToRestWithResults(page *entity.Page) openapi.PageWithResults {
 			return res
 		}(),
 		Status: StatusToRest(page.Status),
+		Meta: openapi.PageWithResultsMeta{
+			Title:       html.EscapeString(page.Meta.Title),
+			Description: html.EscapeString(page.Meta.Description),
+			Error:       openapi.NewOptString(page.Meta.Error),
+		},
 		Results: func() []openapi.Result {
 			results := make([]openapi.Result, len(page.Results.Results()))
 
@@ -65,6 +71,11 @@ func PageToRest(page *entity.Page) openapi.Page {
 		ID:      page.ID,
 		URL:     page.URL,
 		Created: page.Created,
+		Meta: openapi.PageMeta{
+			Title:       html.EscapeString(page.Meta.Title),
+			Description: html.EscapeString(page.Meta.Description),
+			Error:       openapi.NewOptString(page.Meta.Error),
+		},
 		Formats: func() []openapi.Format {
 			res := make([]openapi.Format, len(page.Formats))
 

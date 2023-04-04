@@ -4,5 +4,5 @@ import (
 	"embed"
 )
 
-//go:embed static/*
+//go:embed */*.html */*.css */*.js
 var StaticFiles embed.FS

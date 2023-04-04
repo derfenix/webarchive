@@ -4,7 +4,7 @@ info:
   description: API description in Markdown.
   version: 1.0.0
 servers:
-  - url: 'https://api.example.com'
+  - url: 'https://api.example.com/api/v1'
 paths:
   /pages:
     get:
@@ -183,12 +183,25 @@ components:
             $ref: '#/components/schemas/format'
         status:
           $ref: '#/components/schemas/status'
+        meta:
+          type: object
+          properties:
+            title:
+              type: string
+            description:
+              type: string
+            error:
+              type: string
+          required:
+            - title
+            - description
       required:
         - id
         - url
         - formats
         - status
         - created
+        - meta
     result:
       type: object
       properties:

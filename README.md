@@ -24,13 +24,17 @@ variables:
   * **LOGGING_DEBUG** — enable debug logs (default `false`)
 * **API**
   * **API_ADDRESS** — address the API server will listen (default `0.0.0.0:5001`)
+* **UI**
+  * **UI_ENABLED** — Enable builtin web UI (default `true`)
+  * **UI_PREFIX** — Prefix for the web UI (default `/`)
+  * **UI_THEME** — UI theme name (default `basic`). No other values available yet
 * **PDF**
   * **PDF_LANDSCAPE** — use landscape page orientation instead of portrait (default `false`)
   * **PDF_GRAYSCALE** — use grayscale filter for the output pdf (default `false`)
   * **PDF_MEDIA_PRINT** — use media type `print` for the request (default `true`)
   * **PDF_ZOOM** — zoom page (default `1.0` i.e. no actual zoom)
-  * **PDF_VIEWPORT** — use specified viewport value (default `1920x1080`)
-  * **PDF_DPI** — use specified DPI value for the output pdf (default `300`)
+  * **PDF_VIEWPORT** — use specified viewport value (default `1280x720`)
+  * **PDF_DPI** — use specified DPI value for the output pdf (default `150`)
   * **PDF_FILENAME** — use specified name for output pdf file (default `page.pdf`)
 
 
@@ -60,7 +64,7 @@ docker compose up -d webarchive
 ### 2. Add a page
 
 ```shell
-curl -X POST --location "http://localhost:5001/pages" \
+curl -X POST --location "http://localhost:5001/api/v1/pages" \
     -H "Content-Type: application/json" \
     -d "{
           \"url\": \"https://github.com/wkhtmltopdf/wkhtmltopdf/issues/1937\",
@@ -75,13 +79,13 @@ or
 
 ```shell
 curl -X POST --location \
-  "http://localhost:5001/pages?url=https%3A%2F%2Fgithub.com%2Fwkhtmltopdf%2Fwkhtmltopdf%2Fissues%2F1937&formats=pdf%2Cheaders&description=Foo+Bar"
+  "http://localhost:5001/api/v1/pages?url=https%3A%2F%2Fgithub.com%2Fwkhtmltopdf%2Fwkhtmltopdf%2Fissues%2F1937&formats=pdf%2Cheaders&description=Foo+Bar"
 ```
 
 ### 3. Get the page's info
 
 ```shell
-curl -X GET --location "http://localhost:5001/pages/$page_id" | jq .
+curl -X GET --location "http://localhost:5001/api/v1/pages/$page_id" | jq .
 ```
 where `$page_id` — value of the `id` field from previous command response.
 If `status` field in response is `success` (or `with_errors`) - the `results` field
@@ -90,7 +94,7 @@ will contain all processed formats with ids of the stored files.
 ### 4. Open file in browser
 
 ```shell
-xdg-open "http://localhost:5001/pages/$page_id/file/$file_id"
+xdg-open "http://localhost:5001/api/v1/pages/$page_id/file/$file_id"
 ```
 Where  `$page_id` — value of the `id` field from previous command response, and
 `$file_id` — the id of interesting file.
@@ -98,7 +102,7 @@ Where  `$page_id` — value of the `id` field from previous command response, an
 ### 5. List all stored pages
 
 ```shell
-curl -X GET --location "http://localhost:5001/pages" | jq .
+curl -X GET --location "http://localhost:5001/api/v1/pages" | jq .
 ```
 
 ## Roadmap

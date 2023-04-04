@@ -8,6 +8,8 @@ import (
 	"net/http/cookiejar"
 	"time"
 
+	"golang.org/x/net/html"
+
 	"github.com/derfenix/webarchive/config"
 	"github.com/derfenix/webarchive/entity"
 )
@@ -52,6 +54,7 @@ func NewProcessors(cfg config.Config) (*Processors, error) {
 	}
 
 	procs := Processors{
+		client: httpClient,
 		processors: map[entity.Format]processor{
 			entity.FormatHeaders:    NewHeaders(httpClient),
 			entity.FormatPDF:        NewPDF(cfg.PDF),
@@ -64,6 +67,7 @@ func NewProcessors(cfg config.Config) (*Processors, error) {
 
 type Processors struct {
 	processors map[entity.Format]processor
+	client     *http.Client
 }
 
 func (p *Processors) Process(ctx context.Context, format entity.Format, url string) entity.Result {
@@ -92,4 +96,63 @@ func (p *Processors) OverrideProcessor(format entity.Format, proc processor) err
 	p.processors[format] = proc
 
 	return nil
+}
+
+func (p *Processors) GetMeta(ctx context.Context, url string) (entity.Meta, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return entity.Meta{}, fmt.Errorf("new request: %w", err)
+	}
+
+	response, err := p.client.Do(req)
+	if err != nil {
+		return entity.Meta{}, fmt.Errorf("do request: %w", err)
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return entity.Meta{}, fmt.Errorf("want status 200, got %d", response.StatusCode)
+	}
+
+	if response.Body == nil {
+		return entity.Meta{}, fmt.Errorf("empty response body")
+	}
+
+	defer func() {
+		_ = response.Body.Close()
+	}()
+
+	htmlNode, err := html.Parse(response.Body)
+	if err != nil {
+		return entity.Meta{}, fmt.Errorf("parse response body: %w", err)
+	}
+
+	meta := entity.Meta{}
+	getMetaData(htmlNode, &meta)
+
+	return meta, nil
+}
+
+func getMetaData(n *html.Node, meta *entity.Meta) {
+	if n == nil {
+		return
+	}
+
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.ElementNode && c.Data == "title" {
+			meta.Title = c.FirstChild.Data
+		}
+		if c.Type == html.ElementNode && c.Data == "meta" {
+			attrs := make(map[string]string)
+			for _, attr := range c.Attr {
+				attrs[attr.Key] = attr.Val
+			}
+
+			name, ok := attrs["name"]
+			if ok && name == "description" {
+				meta.Description = attrs["content"]
+			}
+		}
+
+		getMetaData(c, meta)
+	}
 }

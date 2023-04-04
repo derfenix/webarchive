@@ -47,6 +47,7 @@ func (p *PDF) Process(_ context.Context, url string) ([]entity.File, error) {
 	page.FooterFontSize.Set(10)
 	page.Zoom.Set(p.cfg.Zoom)
 	page.ViewportSize.Set(p.cfg.Viewport)
+	page.NoBackground.Set(true)
 
 	gen.AddPage(page)
 

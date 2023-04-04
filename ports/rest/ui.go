@@ -10,15 +10,19 @@ import (
 )
 
 func NewUI(cfg config.UI) *UI {
-	return &UI{prefix: cfg.Prefix}
+	return &UI{
+		prefix: cfg.Prefix,
+		theme:  cfg.Theme,
+	}
 }
 
 type UI struct {
 	prefix string
+	theme  string
 }
 
 func (u *UI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	serveRoot, err := fs.Sub(ui.StaticFiles, "static")
+	serveRoot, err := fs.Sub(ui.StaticFiles, u.theme)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -27,12 +31,11 @@ func (u *UI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasPrefix(r.URL.Path, u.prefix) {
 		r.URL.Path = "/" + strings.TrimPrefix(r.URL.Path, u.prefix)
 	}
+	if !strings.HasPrefix(r.URL.Path, "/static") {
+		r.URL.Path = "/"
+	}
 
 	r.URL.Path = strings.TrimPrefix(r.URL.Path, "/static")
 
 	http.FileServer(http.FS(serveRoot)).ServeHTTP(w, r)
-}
-
-func (u *UI) IsUIRequest(r *http.Request) bool {
-	return r.URL.Path == u.prefix || strings.HasPrefix(r.URL.Path, "/static/")
 }

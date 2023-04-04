@@ -324,6 +324,7 @@ type Page struct {
 	Created time.Time `json:"created"`
 	Formats []Format  `json:"formats"`
 	Status  Status    `json:"status"`
+	Meta    PageMeta  `json:"meta"`
 }
 
 // GetID returns the value of ID.
@@ -351,6 +352,11 @@ func (s *Page) GetStatus() Status {
 	return s.Status
 }
 
+// GetMeta returns the value of Meta.
+func (s *Page) GetMeta() PageMeta {
+	return s.Meta
+}
+
 // SetID sets the value of ID.
 func (s *Page) SetID(val uuid.UUID) {
 	s.ID = val
@@ -376,17 +382,59 @@ func (s *Page) SetStatus(val Status) {
 	s.Status = val
 }
 
+// SetMeta sets the value of Meta.
+func (s *Page) SetMeta(val PageMeta) {
+	s.Meta = val
+}
+
 func (*Page) addPageRes() {}
+
+type PageMeta struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Error       OptString `json:"error"`
+}
+
+// GetTitle returns the value of Title.
+func (s *PageMeta) GetTitle() string {
+	return s.Title
+}
+
+// GetDescription returns the value of Description.
+func (s *PageMeta) GetDescription() string {
+	return s.Description
+}
+
+// GetError returns the value of Error.
+func (s *PageMeta) GetError() OptString {
+	return s.Error
+}
+
+// SetTitle sets the value of Title.
+func (s *PageMeta) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetDescription sets the value of Description.
+func (s *PageMeta) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetError sets the value of Error.
+func (s *PageMeta) SetError(val OptString) {
+	s.Error = val
+}
 
 // Merged schema.
 // Ref: #/components/schemas/pageWithResults
 type PageWithResults struct {
-	ID      uuid.UUID `json:"id"`
-	URL     string    `json:"url"`
-	Created time.Time `json:"created"`
-	Formats []Format  `json:"formats"`
-	Status  Status    `json:"status"`
-	Results []Result  `json:"results"`
+	ID      uuid.UUID           `json:"id"`
+	URL     string              `json:"url"`
+	Created time.Time           `json:"created"`
+	Formats []Format            `json:"formats"`
+	Status  Status              `json:"status"`
+	Meta    PageWithResultsMeta `json:"meta"`
+	Results []Result            `json:"results"`
 }
 
 // GetID returns the value of ID.
@@ -412,6 +460,11 @@ func (s *PageWithResults) GetFormats() []Format {
 // GetStatus returns the value of Status.
 func (s *PageWithResults) GetStatus() Status {
 	return s.Status
+}
+
+// GetMeta returns the value of Meta.
+func (s *PageWithResults) GetMeta() PageWithResultsMeta {
+	return s.Meta
 }
 
 // GetResults returns the value of Results.
@@ -444,12 +497,53 @@ func (s *PageWithResults) SetStatus(val Status) {
 	s.Status = val
 }
 
+// SetMeta sets the value of Meta.
+func (s *PageWithResults) SetMeta(val PageWithResultsMeta) {
+	s.Meta = val
+}
+
 // SetResults sets the value of Results.
 func (s *PageWithResults) SetResults(val []Result) {
 	s.Results = val
 }
 
 func (*PageWithResults) getPageRes() {}
+
+type PageWithResultsMeta struct {
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Error       OptString `json:"error"`
+}
+
+// GetTitle returns the value of Title.
+func (s *PageWithResultsMeta) GetTitle() string {
+	return s.Title
+}
+
+// GetDescription returns the value of Description.
+func (s *PageWithResultsMeta) GetDescription() string {
+	return s.Description
+}
+
+// GetError returns the value of Error.
+func (s *PageWithResultsMeta) GetError() OptString {
+	return s.Error
+}
+
+// SetTitle sets the value of Title.
+func (s *PageWithResultsMeta) SetTitle(val string) {
+	s.Title = val
+}
+
+// SetDescription sets the value of Description.
+func (s *PageWithResultsMeta) SetDescription(val string) {
+	s.Description = val
+}
+
+// SetError sets the value of Error.
+func (s *PageWithResultsMeta) SetError(val OptString) {
+	s.Error = val
+}
 
 type Pages []Page
 

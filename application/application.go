@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,7 +49,8 @@ func NewApplication(cfg config.Config) (Application, error) {
 	worker := entity.NewWorker(workerCh, pageRepo, processor, log.Named("worker"))
 
 	server, err := openapi.NewServer(
-		rest.NewService(pageRepo, workerCh),
+		rest.NewService(pageRepo, workerCh, processor),
+		openapi.WithPathPrefix("/api/v1"),
 		openapi.WithMiddleware(
 			func(r middleware.Request, next middleware.Next) (middleware.Response, error) {
 				start := time.Now()
@@ -79,13 +81,13 @@ func NewApplication(cfg config.Config) (Application, error) {
 		ui := rest.NewUI(cfg.UI)
 
 		httpHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if ui.IsUIRequest(r) {
-				ui.ServeHTTP(w, r)
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				server.ServeHTTP(w, r)
 
 				return
 			}
 
-			server.ServeHTTP(w, r)
+			ui.ServeHTTP(w, r)
 		})
 	}
 

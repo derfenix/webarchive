@@ -111,3 +111,4 @@ curl -X GET --location "http://localhost:5001/pages" | jq .
 - [ ] Optional authentication
 - [ ] Multi-user access
 - [ ] Support SQL database with or without separate files storage
+- [ ] Tags/Categories

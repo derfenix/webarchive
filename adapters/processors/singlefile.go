@@ -112,17 +112,8 @@ func (s *SingleFile) findAndReplaceResources(ctx context.Context, node *html.Nod
 func (s *SingleFile) replaceResource(ctx context.Context, node *html.Node, baseURL string) error {
 	for i, attribute := range node.Attr {
 		if attribute.Key == "src" || attribute.Key == "href" {
-			encoded, contentType, err := s.loadResource(ctx, attribute.Val, baseURL)
-			if err != nil {
-				return fmt.Errorf("load resource for %s: %w", node.Data, err)
-			}
-
-			if len(encoded) == 0 {
-				attribute.Val = ""
-
-			} else {
-				attribute.Val = fmt.Sprintf("data:%s;base64, %s", contentType, encoded)
-			}
+			raw, contentType := s.loadResource(ctx, attribute.Val, baseURL)
+			setResource(raw, attribute, contentType, node)
 
 			node.Attr[i] = attribute
 		}
@@ -131,27 +122,68 @@ func (s *SingleFile) replaceResource(ctx context.Context, node *html.Node, baseU
 	return nil
 }
 
-func (s *SingleFile) loadResource(ctx context.Context, val, baseURL string) ([]byte, string, error) {
+func setResource(raw []byte, attribute html.Attribute, contentType string, node *html.Node) {
+	if len(raw) == 0 {
+		attribute.Val = ""
+	} else {
+		if strings.HasPrefix(contentType, "image") {
+			encoded := make([]byte, base64.StdEncoding.EncodedLen(len(raw)))
+			base64.StdEncoding.Encode(encoded, raw)
+			attribute.Val = fmt.Sprintf("data:%s;base64, %s", contentType, encoded)
+		} else {
+			attribute.Val = ""
+			var atomValue atom.Atom
+			var data string
+
+			for _, attr := range node.Attr {
+				if attr.Key == "type" {
+					switch attr.Val {
+					case "script":
+						atomValue = atom.Script
+						data = "script"
+					case "stylesheet":
+						atomValue = atom.Style
+						data = "style"
+					}
+				}
+			}
+			newNode := &html.Node{
+				NextSibling: node.NextSibling,
+				Type:        html.ElementNode,
+				DataAtom:    atomValue,
+				Data:        data,
+			}
+			newNode.AppendChild(&html.Node{
+				Type:     html.RawNode,
+				DataAtom: atom.Data,
+				Data:     string(raw),
+			})
+			node.NextSibling = newNode
+		}
+	}
+}
+
+func (s *SingleFile) loadResource(ctx context.Context, val, baseURL string) ([]byte, string) {
 	if !strings.HasPrefix(val, "http://") && !strings.HasPrefix(val, "https://") {
 		var err error
 		val, err = url.JoinPath(baseURL, val)
 		if err != nil {
-			return nil, "", fmt.Errorf("join base path %s and url %s: %w", baseURL, val, err)
+			return nil, ""
 		}
 		val, err = url.PathUnescape(val)
 		if err != nil {
-			return nil, "", fmt.Errorf("unescape path %s: %w", val, err)
+			return nil, ""
 		}
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, val, nil)
 	if err != nil {
-		return nil, "", fmt.Errorf("new request: %w", err)
+		return nil, ""
 	}
 
 	response, err := s.client.Do(req)
 	if err != nil {
-		return nil, "", fmt.Errorf("do request: %w", err)
+		return nil, ""
 	}
 
 	defer func() {
@@ -161,18 +193,15 @@ func (s *SingleFile) loadResource(ctx context.Context, val, baseURL string) ([]b
 	}()
 
 	if response.StatusCode != http.StatusOK {
-		return []byte{}, "", nil
+		return []byte{}, ""
 	}
 
 	raw, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, "", fmt.Errorf("read body: %w", err)
+		return nil, ""
 	}
 
-	encoded := make([]byte, base64.StdEncoding.EncodedLen(len(raw)))
-	base64.StdEncoding.Encode(encoded, raw)
-
-	return encoded, response.Header.Get("Content-Type"), nil
+	return raw, response.Header.Get("Content-Type")
 }
 
 func (s *SingleFile) setCharset(node *html.Node, encoding string) {

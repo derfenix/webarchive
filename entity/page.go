@@ -75,6 +75,13 @@ func (p *Page) Process(ctx context.Context, processor Processor) {
 	innerWG := sync.WaitGroup{}
 	innerWG.Add(len(p.Formats))
 
+	meta, err := processor.GetMeta(ctx, p.URL)
+	if err != nil {
+		p.Meta.Error = err.Error()
+	} else {
+		p.Meta = meta
+	}
+
 	for _, format := range p.Formats {
 		go func(format Format) {
 			defer innerWG.Done()

@@ -3,11 +3,11 @@
   <component name="JsonSchemaMappingsProjectConfiguration">
     <state>
       <map>
-        <entry key="openapi">
+        <entry key="OpenAPI 3.0">
           <value>
             <SchemaInfo>
-              <option name="name" value="openapi" />
-              <option name="relativePathToSchema" value="https://raw.githubusercontent.com/OAI/OpenAPI-Specification/main/schemas/v3.1/schema.json" />
+              <option name="name" value="OpenAPI 3.0" />
+              <option name="relativePathToSchema" value="https://raw.githubusercontent.com/OAI/OpenAPI-Specification/master/schemas/v3.0/schema.json" />
               <option name="applicationDefined" value="true" />
               <option name="patterns">
                 <list>

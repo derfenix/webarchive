@@ -40,6 +40,7 @@ func (p *PDF) Process(_ context.Context, url string) ([]entity.File, error) {
 	page := wkhtmltopdf.NewPage(url)
 	page.PrintMediaType.Set(p.cfg.MediaPrint)
 	page.JavascriptDelay.Set(200)
+	page.LoadErrorHandling.Set("ignore")
 	page.LoadMediaErrorHandling.Set("ignore")
 	page.FooterRight.Set("[page]")
 	page.HeaderLeft.Set(url)

@@ -49,7 +49,7 @@ func NewApplication(cfg config.Config) (Application, error) {
 	worker := entity.NewWorker(workerCh, pageRepo, processor, log.Named("worker"))
 
 	server, err := openapi.NewServer(
-		rest.NewService(pageRepo, workerCh, processor),
+		rest.NewService(pageRepo, workerCh),
 		openapi.WithPathPrefix("/api/v1"),
 		openapi.WithMiddleware(
 			func(r middleware.Request, next middleware.Next) (middleware.Response, error) {

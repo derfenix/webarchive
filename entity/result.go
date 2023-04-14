@@ -6,6 +6,8 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
+type ResultsRO []Result
+
 type Result struct {
 	Format Format
 	Err    error
@@ -15,6 +17,13 @@ type Result struct {
 type Results struct {
 	mu      sync.RWMutex
 	results []Result
+}
+
+func (r *Results) RO() ResultsRO {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return r.results
 }
 
 func (r *Results) MarshalMsgpack() ([]byte, error) {

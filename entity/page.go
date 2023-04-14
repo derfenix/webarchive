@@ -62,7 +62,7 @@ type Page struct {
 	Description string
 	Created     time.Time
 	Formats     []Format
-	Results     Results
+	Results     ResultsRO
 	Version     uint16
 	Status      Status
 	Meta        Meta
@@ -83,25 +83,27 @@ func (p *Page) Process(ctx context.Context, processor Processor) {
 		p.Meta = meta
 	}
 
+	results := Results{}
+
 	for _, format := range p.Formats {
 		go func(format Format) {
 			defer innerWG.Done()
 
 			defer func() {
 				if err := recover(); err != nil {
-					p.Results.Add(Result{Format: format, Err: fmt.Errorf("recovered from panic: %v", err)})
+					results.Add(Result{Format: format, Err: fmt.Errorf("recovered from panic: %v", err)})
 				}
 			}()
 
 			result := processor.Process(ctx, format, p.URL)
-			p.Results.Add(result)
+			results.Add(result)
 		}(format)
 	}
 
 	innerWG.Wait()
 
 	var hasResultWithOutErrors bool
-	for _, result := range p.Results.Results() {
+	for _, result := range results.Results() {
 		if result.Err != nil {
 			p.Status = StatusWithErrors
 		} else {
@@ -116,4 +118,6 @@ func (p *Page) Process(ctx context.Context, processor Processor) {
 	if p.Status == StatusProcessing {
 		p.Status = StatusDone
 	}
+
+	p.Results = results.RO()
 }

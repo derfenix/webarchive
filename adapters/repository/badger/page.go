@@ -169,8 +169,8 @@ func (p *Page) ListAll(ctx context.Context) ([]*entity.Page, error) {
 	return pages, nil
 }
 
-func (p *Page) ListUnprocessed(ctx context.Context) ([]*entity.Page, error) {
-	pages := make([]*entity.Page, 0, 100)
+func (p *Page) ListUnprocessed(ctx context.Context) ([]entity.Page, error) {
+	pages := make([]entity.Page, 0, 100)
 
 	err := p.db.View(func(txn *badger.Txn) error {
 		iterator := txn.NewIterator(badger.DefaultIteratorOptions)
@@ -200,16 +200,8 @@ func (p *Page) ListUnprocessed(ctx context.Context) ([]*entity.Page, error) {
 				continue
 			}
 
-			pages = append(pages, &entity.Page{
-				ID:          page.ID,
-				URL:         page.URL,
-				Description: page.Description,
-				Created:     page.Created,
-				Formats:     page.Formats,
-				Version:     page.Version,
-				Status:      page.Status,
-				Meta:        page.Meta,
-			})
+			//goland:noinspection GoVetCopyLock
+			pages = append(pages, page) //nolint:govet // didn't touch the lock here
 		}
 
 		return nil

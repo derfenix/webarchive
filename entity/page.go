@@ -41,6 +41,7 @@ const (
 type Meta struct {
 	Title       string
 	Description string
+	Encoding    string
 	Error       string
 }
 

@@ -9,7 +9,7 @@ import (
 
 type Pages interface {
 	Save(ctx context.Context, page *Page) error
-	ListUnprocessed(ctx context.Context) ([]*Page, error)
+	ListUnprocessed(ctx context.Context) ([]Page, error)
 }
 
 func NewWorker(ch chan *Page, pages Pages, processor Processor, log *zap.Logger) *Worker {
@@ -37,7 +37,7 @@ func (w *Worker) Start(ctx context.Context, wg *sync.WaitGroup) {
 			w.log.Error("failed to get unprocessed pages", zap.Error(err))
 		} else {
 			for i := range unprocessed {
-				w.ch <- unprocessed[i]
+				w.ch <- &unprocessed[i]
 			}
 		}
 	}()

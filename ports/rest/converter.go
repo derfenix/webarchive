@@ -29,10 +29,10 @@ func PageToRestWithResults(page *entity.Page) openapi.PageWithResults {
 			Error:       openapi.NewOptString(page.Meta.Error),
 		},
 		Results: func() []openapi.Result {
-			results := make([]openapi.Result, len(page.Results.Results()))
+			results := make([]openapi.Result, len(page.Results))
 
 			for i := range results {
-				result := &(page.Results.Results())[i]
+				result := &page.Results[i]
 
 				errText := openapi.OptString{}
 				if result.Err != nil {

@@ -44,9 +44,9 @@ func (p *Page) GetFile(_ context.Context, pageID, fileID uuid.UUID) (*entity.Fil
 			return fmt.Errorf("get value: %w", err)
 		}
 
-		for i := range page.Results.Results() {
-			for j := range page.Results.Results()[i].Files {
-				ff := &page.Results.Results()[i].Files[j]
+		for i := range page.Results {
+			for j := range page.Results[i].Files {
+				ff := &page.Results[i].Files[j]
 
 				if ff.ID == fileID {
 					file = ff

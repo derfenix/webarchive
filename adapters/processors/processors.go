@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"strings"
 	"time"
 
 	"golang.org/x/net/html"
@@ -13,6 +14,8 @@ import (
 	"github.com/derfenix/webarchive/config"
 	"github.com/derfenix/webarchive/entity"
 )
+
+const defaultEncoding = "utf-8"
 
 type processor interface {
 	Process(ctx context.Context, url string) ([]entity.File, error)
@@ -128,6 +131,7 @@ func (p *Processors) GetMeta(ctx context.Context, url string) (entity.Meta, erro
 
 	meta := entity.Meta{}
 	getMetaData(htmlNode, &meta)
+	meta.Encoding = encodingFromHeader(response.Header)
 
 	return meta, nil
 }
@@ -155,4 +159,20 @@ func getMetaData(n *html.Node, meta *entity.Meta) {
 
 		getMetaData(c, meta)
 	}
+}
+
+func encodingFromHeader(headers http.Header) string {
+	var foundEncoding bool
+	var encoding string
+
+	_, encoding, foundEncoding = strings.Cut(headers.Get("Content-Type"), "; ")
+	if foundEncoding {
+		_, encoding, foundEncoding = strings.Cut(encoding, "=")
+	}
+
+	if !foundEncoding {
+		encoding = defaultEncoding
+	}
+
+	return encoding
 }

@@ -3,20 +3,13 @@ package processors
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
-	"strings"
-
-	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
 
 	"github.com/derfenix/webarchive/entity"
+	"golang.org/x/net/html"
 )
-
-const defaultEncoding = "utf-8"
 
 func NewSingleFile(client *http.Client) *SingleFile {
 	return &SingleFile{client: client}
@@ -27,6 +20,34 @@ type SingleFile struct {
 }
 
 func (s *SingleFile) Process(ctx context.Context, url string) ([]entity.File, error) {
+	response, err := s.get(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+
+	htmlNode, err := html.Parse(response.Body)
+	if err != nil {
+		_ = response.Body.Close()
+		return nil, fmt.Errorf("parse response body: %w", err)
+	}
+
+	_ = response.Body.Close()
+
+	if err := s.process(ctx, htmlNode, url, response.Header); err != nil {
+		return nil, fmt.Errorf("process: %w", err)
+	}
+
+	buf := bytes.NewBuffer(nil)
+	if err := html.Render(buf, htmlNode); err != nil {
+		return nil, fmt.Errorf("render result html: %w", err)
+	}
+
+	htmlFile := entity.NewFile("page.html", buf.Bytes())
+
+	return []entity.File{htmlFile}, nil
+}
+
+func (s *SingleFile) get(ctx context.Context, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("new request: %w", err)
@@ -45,209 +66,61 @@ func (s *SingleFile) Process(ctx context.Context, url string) ([]entity.File, er
 		return nil, fmt.Errorf("empty response body")
 	}
 
-	defer func() {
-		_ = response.Body.Close()
-	}()
-
-	htmlNode, err := html.Parse(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("parse response body: %w", err)
-	}
-
-	if err := s.crawl(ctx, htmlNode, baseURL(url), getEncoding(response)); err != nil {
-		return nil, fmt.Errorf("crawl: %w", err)
-	}
-
-	buf := bytes.NewBuffer(nil)
-	if err := html.Render(buf, htmlNode); err != nil {
-		return nil, fmt.Errorf("render result html: %w", err)
-	}
-
-	htmlFile := entity.NewFile("page.html", buf.Bytes())
-
-	return []entity.File{htmlFile}, nil
+	return response, nil
 }
 
-func (s *SingleFile) crawl(ctx context.Context, node *html.Node, baseURL string, encoding string) error {
-	if node.Data == "head" {
-		s.setCharset(node, encoding)
+func (s *SingleFile) process(ctx context.Context, node *html.Node, pageURL string, headers http.Header) error {
+	parsedURL, err := url.Parse(pageURL)
+	if err != nil {
+		return fmt.Errorf("parse page url: %w", err)
 	}
+
+	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
 
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		if child.Type == html.ElementNode {
-			if err := s.findAndReplaceResources(ctx, child, baseURL); err != nil {
-				return err
-			}
+		var err error
+		switch child.Data {
+		case "head":
+			err = s.processHead(ctx, child, baseURL)
+
+		case "body":
+			err = s.processBody(ctx, child, baseURL)
 		}
 
-		if err := s.crawl(ctx, child, baseURL, encoding); err != nil {
-			return fmt.Errorf("crawl child %s: %w", child.Data, err)
-		}
-	}
-
-	return nil
-}
-
-func (s *SingleFile) findAndReplaceResources(ctx context.Context, node *html.Node, baseURL string) error {
-	switch node.DataAtom {
-	case atom.Img, atom.Image, atom.Script, atom.Style:
-		err := s.replaceResource(ctx, node, baseURL)
 		if err != nil {
 			return err
 		}
-
-	case atom.Link:
-		for _, attribute := range node.Attr {
-			if attribute.Key == "rel" && (attribute.Val == "stylesheet") {
-				if err := s.replaceResource(ctx, node, baseURL); err != nil {
-					return err
-				}
-			}
-		}
 	}
 
 	return nil
 }
 
-func (s *SingleFile) replaceResource(ctx context.Context, node *html.Node, baseURL string) error {
-	for i, attribute := range node.Attr {
-		if attribute.Key == "src" || attribute.Key == "href" {
-			raw, contentType := s.loadResource(ctx, attribute.Val, baseURL)
-			setResource(raw, attribute, contentType, node)
-
-			node.Attr[i] = attribute
-		}
-	}
-
-	return nil
-}
-
-func setResource(raw []byte, attribute html.Attribute, contentType string, node *html.Node) {
-	if len(raw) == 0 {
-		attribute.Val = ""
-	} else {
-		if strings.HasPrefix(contentType, "image") {
-			encoded := make([]byte, base64.StdEncoding.EncodedLen(len(raw)))
-			base64.StdEncoding.Encode(encoded, raw)
-			attribute.Val = fmt.Sprintf("data:%s;base64, %s", contentType, encoded)
-		} else {
-			attribute.Val = ""
-			var atomValue atom.Atom
-			var data string
-
-			for _, attr := range node.Attr {
-				if attr.Key == "type" {
-					switch attr.Val {
-					case "script":
-						atomValue = atom.Script
-						data = "script"
-					case "stylesheet":
-						atomValue = atom.Style
-						data = "style"
-					}
-				}
-			}
-			newNode := &html.Node{
-				NextSibling: node.NextSibling,
-				Type:        html.ElementNode,
-				DataAtom:    atomValue,
-				Data:        data,
-			}
-			newNode.AppendChild(&html.Node{
-				Type:     html.RawNode,
-				DataAtom: atom.Data,
-				Data:     string(raw),
-			})
-			node.NextSibling = newNode
-		}
-	}
-}
-
-func (s *SingleFile) loadResource(ctx context.Context, val, baseURL string) ([]byte, string) {
-	if !strings.HasPrefix(val, "http://") && !strings.HasPrefix(val, "https://") {
-		var err error
-		val, err = url.JoinPath(baseURL, val)
-		if err != nil {
-			return nil, ""
-		}
-		val, err = url.PathUnescape(val)
-		if err != nil {
-			return nil, ""
-		}
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, val, nil)
-	if err != nil {
-		return nil, ""
-	}
-
-	response, err := s.client.Do(req)
-	if err != nil {
-		return nil, ""
-	}
-
-	defer func() {
-		if response.Body != nil {
-			_ = response.Body.Close()
-		}
-	}()
-
-	if response.StatusCode != http.StatusOK {
-		return []byte{}, ""
-	}
-
-	raw, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, ""
-	}
-
-	return raw, response.Header.Get("Content-Type")
-}
-
-func (s *SingleFile) setCharset(node *html.Node, encoding string) {
-	var charsetExists bool
-
+func (s *SingleFile) processHead(ctx context.Context, node *html.Node, baseURL string) error {
 	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		if child.Data == "meta" {
-			for _, attribute := range child.Attr {
-				if attribute.Key == "charset" {
-					charsetExists = true
-				}
+		switch child.Data {
+		case "link":
+			if err := s.processHref(ctx, child.Attr, baseURL); err != nil {
+				return fmt.Errorf("process link %s: %w", child.Attr, err)
+			}
+
+		case "script":
+			if err := s.processSrc(ctx, child.Attr, baseURL); err != nil {
+				return fmt.Errorf("process script %s: %w", child.Attr, err)
 			}
 		}
 	}
 
-	if !charsetExists {
-		node.AppendChild(&html.Node{
-			Type:     html.ElementNode,
-			DataAtom: atom.Meta,
-			Data:     "meta",
-			Attr: []html.Attribute{
-				{
-					Key: "charset",
-					Val: encoding,
-				},
-			},
-		})
-	}
+	return nil
 }
 
-func baseURL(val string) string {
-	parsed, err := url.Parse(val)
-	if err != nil {
-		return val
-	}
-
-	return fmt.Sprintf("%s://%s", parsed.Scheme, parsed.Host)
+func (s *SingleFile) processBody(ctx context.Context, child *html.Node, url string) error {
+	return nil
 }
 
-func getEncoding(response *http.Response) string {
-	_, encoding, found := strings.Cut(response.Header.Get("Content-Type"), "charset=")
-	if !found {
-		return defaultEncoding
-	}
+func (s *SingleFile) processHref(ctx context.Context, attrs []html.Attribute, baseURL string) error {
+	return nil
+}
 
-	encoding = strings.TrimSpace(encoding)
-
-	return encoding
+func (s *SingleFile) processSrc(ctx context.Context, attrs []html.Attribute, baseURL string) error {
+	return nil
 }

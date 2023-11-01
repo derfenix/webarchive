@@ -8,6 +8,8 @@ import (
 	"github.com/dgraph-io/badger/v4"
 	"github.com/google/uuid"
 
+	"github.com/derfenix/webarchive/adapters/repository"
+
 	"github.com/derfenix/webarchive/entity"
 )
 
@@ -24,7 +26,9 @@ type Page struct {
 }
 
 func (p *Page) GetFile(_ context.Context, pageID, fileID uuid.UUID) (*entity.File, error) {
-	page := entity.Page{ID: pageID}
+	page := entity.Page{}
+	page.ID = pageID
+
 	var file *entity.File
 
 	err := p.db.View(func(txn *badger.Txn) error {
@@ -66,7 +70,7 @@ func (p *Page) GetFile(_ context.Context, pageID, fileID uuid.UUID) (*entity.Fil
 
 func (p *Page) Save(_ context.Context, page *entity.Page) error {
 	if p.db.IsClosed() {
-		return ErrDBClosed
+		return repository.ErrDBClosed
 	}
 
 	marshaled, err := marshal(page)
@@ -88,16 +92,17 @@ func (p *Page) Save(_ context.Context, page *entity.Page) error {
 }
 
 func (p *Page) Get(_ context.Context, id uuid.UUID) (*entity.Page, error) {
-	site := entity.Page{ID: id}
+	page := entity.Page{}
+	page.ID = id
 
 	err := p.db.View(func(txn *badger.Txn) error {
-		data, err := txn.Get(p.key(&site))
+		data, err := txn.Get(p.key(&page))
 		if err != nil {
 			return fmt.Errorf("get data: %w", err)
 		}
 
 		err = data.Value(func(val []byte) error {
-			if err := unmarshal(val, &site); err != nil {
+			if err := unmarshal(val, &page); err != nil {
 				return fmt.Errorf("unmarshal data: %w", err)
 			}
 
@@ -113,7 +118,7 @@ func (p *Page) Get(_ context.Context, id uuid.UUID) (*entity.Page, error) {
 		return nil, fmt.Errorf("view: %w", err)
 	}
 
-	return &site, nil
+	return &page, nil
 }
 
 func (p *Page) ListAll(ctx context.Context) ([]*entity.Page, error) {
@@ -143,16 +148,7 @@ func (p *Page) ListAll(ctx context.Context) ([]*entity.Page, error) {
 				return fmt.Errorf("get item: %w", err)
 			}
 
-			pages = append(pages, &entity.Page{
-				ID:          page.ID,
-				URL:         page.URL,
-				Description: page.Description,
-				Created:     page.Created,
-				Formats:     page.Formats,
-				Version:     page.Version,
-				Status:      page.Status,
-				Meta:        page.Meta,
-			})
+			pages = append(pages, &page)
 		}
 
 		return nil
@@ -196,12 +192,11 @@ func (p *Page) ListUnprocessed(ctx context.Context) ([]entity.Page, error) {
 				return fmt.Errorf("get item: %w", err)
 			}
 
-			if page.Status != entity.StatusProcessing {
-				continue
+			if page.Status == entity.StatusNew {
+				//goland:noinspection GoVetCopyLock
+				pages = append(pages, page) //nolint:govet // didn't touch the lock here
 			}
 
-			//goland:noinspection GoVetCopyLock
-			pages = append(pages, page) //nolint:govet // didn't touch the lock here
 		}
 
 		return nil

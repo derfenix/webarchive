@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/derfenix/webarchive/adapters/repository"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ogen-go/ogen/middleware"
 	"go.uber.org/multierr"
@@ -30,7 +31,7 @@ func NewApplication(cfg config.Config) (Application, error) {
 		return Application{}, fmt.Errorf("new logger: %w", err)
 	}
 
-	db, err := badgerRepo.NewBadger(cfg.DB.Path, log.Named("db"))
+	db, err := repository.NewBadger(cfg.DB.Path, log.Named("db"))
 	if err != nil {
 		return Application{}, fmt.Errorf("new badger: %w", err)
 	}
@@ -173,7 +174,7 @@ func (a *Application) Stop() error {
 		errs = multierr.Append(errs, fmt.Errorf("sync db: %w", err))
 	}
 
-	if err := badgerRepo.Backup(a.db, badgerRepo.BackupStop); err != nil {
+	if err := repository.Backup(a.db, repository.BackupStop); err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("backup on stop: %w", err))
 	}
 

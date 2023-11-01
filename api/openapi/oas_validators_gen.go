@@ -42,6 +42,7 @@ func (s *AddPageReq) Validate() error {
 	}
 	return nil
 }
+
 func (s Format) Validate() error {
 	switch s {
 	case "all":
@@ -103,6 +104,7 @@ func (s *Page) Validate() error {
 	}
 	return nil
 }
+
 func (s *PageWithResults) Validate() error {
 	var failures []validate.FieldError
 	if err := func() error {
@@ -177,12 +179,14 @@ func (s *PageWithResults) Validate() error {
 	}
 	return nil
 }
+
 func (s Pages) Validate() error {
-	if s == nil {
+	alias := ([]Page)(s)
+	if alias == nil {
 		return errors.New("nil is invalid value")
 	}
 	var failures []validate.FieldError
-	for i, elem := range s {
+	for i, elem := range alias {
 		if err := func() error {
 			if err := elem.Validate(); err != nil {
 				return err
@@ -200,6 +204,7 @@ func (s Pages) Validate() error {
 	}
 	return nil
 }
+
 func (s *Result) Validate() error {
 	var failures []validate.FieldError
 	if err := func() error {
@@ -229,6 +234,7 @@ func (s *Result) Validate() error {
 	}
 	return nil
 }
+
 func (s Status) Validate() error {
 	switch s {
 	case "new":

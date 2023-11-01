@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/derfenix/webarchive/adapters/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
@@ -31,7 +32,7 @@ func TestSite(t *testing.T) {
 
 	log := zaptest.NewLogger(t)
 
-	db, err := NewBadger(tempDir, log.Named("db"))
+	db, err := repository.NewBadger(tempDir, log.Named("db"))
 	require.NoError(t, err)
 
 	siteRepo, err := NewPage(db)

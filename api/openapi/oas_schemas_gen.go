@@ -140,6 +140,16 @@ const (
 	FormatHeaders    Format = "headers"
 )
 
+// AllValues returns all Format values.
+func (Format) AllValues() []Format {
+	return []Format{
+		FormatAll,
+		FormatPdf,
+		FormatSingleFile,
+		FormatHeaders,
+	}
+}
+
 // MarshalText implements encoding.TextMarshaler.
 func (s Format) MarshalText() ([]byte, error) {
 	switch s {
@@ -189,6 +199,9 @@ type GetFileOKApplicationPdf struct {
 //
 // Kept to satisfy the io.Reader interface.
 func (s GetFileOKApplicationPdf) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
 	return s.Data.Read(p)
 }
 
@@ -202,6 +215,9 @@ type GetFileOKTextHTML struct {
 //
 // Kept to satisfy the io.Reader interface.
 func (s GetFileOKTextHTML) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
 	return s.Data.Read(p)
 }
 
@@ -215,6 +231,9 @@ type GetFileOKTextPlain struct {
 //
 // Kept to satisfy the io.Reader interface.
 func (s GetFileOKTextPlain) Read(p []byte) (n int, err error) {
+	if s.Data == nil {
+		return 0, io.EOF
+	}
 	return s.Data.Read(p)
 }
 
@@ -641,6 +660,17 @@ const (
 	StatusFailed     Status = "failed"
 	StatusWithErrors Status = "with_errors"
 )
+
+// AllValues returns all Status values.
+func (Status) AllValues() []Status {
+	return []Status{
+		StatusNew,
+		StatusProcessing,
+		StatusDone,
+		StatusFailed,
+		StatusWithErrors,
+	}
+}
 
 // MarshalText implements encoding.TextMarshaler.
 func (s Status) MarshalText() ([]byte, error) {

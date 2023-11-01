@@ -23,12 +23,10 @@ func (s *AddPageBadRequest) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *AddPageBadRequest) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("field")
 		e.Str(s.Field)
 	}
 	{
-
 		e.FieldStart("error")
 		e.Str(s.Error)
 	}
@@ -138,7 +136,6 @@ func (s *AddPageReq) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *AddPageReq) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("url")
 		e.Str(s.URL)
 	}
@@ -280,7 +277,6 @@ func (s *Error) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Error) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("message")
 		e.Str(s.Message)
 	}
@@ -506,22 +502,18 @@ func (s *Page) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Page) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("id")
 		json.EncodeUUID(e, s.ID)
 	}
 	{
-
 		e.FieldStart("url")
 		e.Str(s.URL)
 	}
 	{
-
 		e.FieldStart("created")
 		json.EncodeDateTime(e, s.Created)
 	}
 	{
-
 		e.FieldStart("formats")
 		e.ArrStart()
 		for _, elem := range s.Formats {
@@ -530,12 +522,10 @@ func (s *Page) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
-
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
 	{
-
 		e.FieldStart("meta")
 		s.Meta.Encode(e)
 	}
@@ -699,12 +689,10 @@ func (s *PageMeta) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PageMeta) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("title")
 		e.Str(s.Title)
 	}
 	{
-
 		e.FieldStart("description")
 		e.Str(s.Description)
 	}
@@ -831,22 +819,18 @@ func (s *PageWithResults) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PageWithResults) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("id")
 		json.EncodeUUID(e, s.ID)
 	}
 	{
-
 		e.FieldStart("url")
 		e.Str(s.URL)
 	}
 	{
-
 		e.FieldStart("created")
 		json.EncodeDateTime(e, s.Created)
 	}
 	{
-
 		e.FieldStart("formats")
 		e.ArrStart()
 		for _, elem := range s.Formats {
@@ -855,17 +839,14 @@ func (s *PageWithResults) encodeFields(e *jx.Encoder) {
 		e.ArrEnd()
 	}
 	{
-
 		e.FieldStart("status")
 		s.Status.Encode(e)
 	}
 	{
-
 		e.FieldStart("meta")
 		s.Meta.Encode(e)
 	}
 	{
-
 		e.FieldStart("results")
 		e.ArrStart()
 		for _, elem := range s.Results {
@@ -1052,12 +1033,10 @@ func (s *PageWithResultsMeta) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *PageWithResultsMeta) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("title")
 		e.Str(s.Title)
 	}
 	{
-
 		e.FieldStart("description")
 		e.Str(s.Description)
 	}
@@ -1234,7 +1213,6 @@ func (s *Result) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *Result) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("format")
 		s.Format.Encode(e)
 	}
@@ -1245,7 +1223,6 @@ func (s *Result) encodeFields(e *jx.Encoder) {
 		}
 	}
 	{
-
 		e.FieldStart("files")
 		e.ArrStart()
 		for _, elem := range s.Files {
@@ -1374,22 +1351,18 @@ func (s *ResultFilesItem) Encode(e *jx.Encoder) {
 // encodeFields encodes fields.
 func (s *ResultFilesItem) encodeFields(e *jx.Encoder) {
 	{
-
 		e.FieldStart("id")
 		json.EncodeUUID(e, s.ID)
 	}
 	{
-
 		e.FieldStart("name")
 		e.Str(s.Name)
 	}
 	{
-
 		e.FieldStart("mimetype")
 		e.Str(s.Mimetype)
 	}
 	{
-
 		e.FieldStart("size")
 		e.Int64(s.Size)
 	}

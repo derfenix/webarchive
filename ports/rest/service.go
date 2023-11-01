@@ -85,7 +85,7 @@ func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq, params
 		return nil, fmt.Errorf("save page: %w", err)
 	}
 
-	res := PageToRest(page)
+	res := BasePageToRest(&page.PageBase)
 
 	s.ch <- page
 

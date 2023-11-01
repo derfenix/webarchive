@@ -45,27 +45,33 @@ type Meta struct {
 	Error       string
 }
 
-func NewPage(url string, description string, formats ...Format) *Page {
-	return &Page{
-		ID:          uuid.New(),
-		URL:         url,
-		Description: description,
-		Formats:     formats,
-		Created:     time.Now(),
-		Version:     1,
-	}
-}
-
-type Page struct {
+type PageBase struct {
 	ID          uuid.UUID
 	URL         string
 	Description string
 	Created     time.Time
 	Formats     []Format
-	Results     ResultsRO
 	Version     uint16
 	Status      Status
 	Meta        Meta
+}
+
+func NewPage(url string, description string, formats ...Format) *Page {
+	return &Page{
+		PageBase: PageBase{
+			ID:          uuid.New(),
+			URL:         url,
+			Description: description,
+			Formats:     formats,
+			Created:     time.Now(),
+			Version:     1,
+		},
+	}
+}
+
+type Page struct {
+	PageBase
+	Results ResultsRO
 }
 
 func (p *Page) SetProcessing() {

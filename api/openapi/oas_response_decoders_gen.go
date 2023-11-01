@@ -15,7 +15,7 @@ import (
 	"github.com/ogen-go/ogen/validate"
 )
 
-func decodeAddPageResponse(resp *http.Response) (res AddPageRes, err error) {
+func decodeAddPageResponse(resp *http.Response) (res AddPageRes, _ error) {
 	switch resp.StatusCode {
 	case 201:
 		// Code 201.
@@ -128,12 +128,12 @@ func decodeAddPageResponse(resp *http.Response) (res AddPageRes, err error) {
 		}
 	}()
 	if err != nil {
-		return res, errors.Wrap(err, "default")
+		return res, errors.Wrapf(err, "default (code %d)", resp.StatusCode)
 	}
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetFileResponse(resp *http.Response) (res GetFileRes, err error) {
+func decodeGetFileResponse(resp *http.Response) (res GetFileRes, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -216,12 +216,12 @@ func decodeGetFileResponse(resp *http.Response) (res GetFileRes, err error) {
 		}
 	}()
 	if err != nil {
-		return res, errors.Wrap(err, "default")
+		return res, errors.Wrapf(err, "default (code %d)", resp.StatusCode)
 	}
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetPageResponse(resp *http.Response) (res GetPageRes, err error) {
+func decodeGetPageResponse(resp *http.Response) (res GetPageRes, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -302,12 +302,12 @@ func decodeGetPageResponse(resp *http.Response) (res GetPageRes, err error) {
 		}
 	}()
 	if err != nil {
-		return res, errors.Wrap(err, "default")
+		return res, errors.Wrapf(err, "default (code %d)", resp.StatusCode)
 	}
 	return res, errors.Wrap(defRes, "error")
 }
 
-func decodeGetPagesResponse(resp *http.Response) (res Pages, err error) {
+func decodeGetPagesResponse(resp *http.Response) (res Pages, _ error) {
 	switch resp.StatusCode {
 	case 200:
 		// Code 200.
@@ -385,7 +385,7 @@ func decodeGetPagesResponse(resp *http.Response) (res Pages, err error) {
 		}
 	}()
 	if err != nil {
-		return res, errors.Wrap(err, "default")
+		return res, errors.Wrapf(err, "default (code %d)", resp.StatusCode)
 	}
 	return res, errors.Wrap(defRes, "error")
 }

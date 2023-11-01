@@ -11,6 +11,8 @@ import (
 	"github.com/go-faster/errors"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/metric"
+	semconv "go.opentelemetry.io/otel/semconv/v1.19.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/ogen-go/ogen/conv"
@@ -18,6 +20,34 @@ import (
 	"github.com/ogen-go/ogen/otelogen"
 	"github.com/ogen-go/ogen/uri"
 )
+
+// Invoker invokes operations described by OpenAPI v3 specification.
+type Invoker interface {
+	// AddPage invokes addPage operation.
+	//
+	// Add new page.
+	//
+	// POST /pages
+	AddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (AddPageRes, error)
+	// GetFile invokes getFile operation.
+	//
+	// Get file content.
+	//
+	// GET /pages/{id}/file/{file_id}
+	GetFile(ctx context.Context, params GetFileParams) (GetFileRes, error)
+	// GetPage invokes getPage operation.
+	//
+	// Get page details.
+	//
+	// GET /pages/{id}
+	GetPage(ctx context.Context, params GetPageParams) (GetPageRes, error)
+	// GetPages invokes getPages operation.
+	//
+	// Get all pages.
+	//
+	// GET /pages
+	GetPages(ctx context.Context) (Pages, error)
+}
 
 // Client implements OAS client.
 type Client struct {
@@ -78,19 +108,20 @@ func (c *Client) requestURL(ctx context.Context) *url.URL {
 // POST /pages
 func (c *Client) AddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (AddPageRes, error) {
 	res, err := c.sendAddPage(ctx, request, params)
-	_ = res
 	return res, err
 }
 
 func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params AddPageParams) (res AddPageRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("addPage"),
+		semconv.HTTPMethodKey.String("POST"),
+		semconv.HTTPRouteKey.String("/pages"),
 	}
 	// Validate request before sending.
 	if err := func() error {
-		if request.Set {
+		if value, ok := request.Get(); ok {
 			if err := func() error {
-				if err := request.Value.Validate(); err != nil {
+				if err := value.Validate(); err != nil {
 					return err
 				}
 				return nil
@@ -106,12 +137,13 @@ func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params 
 	// Run stopwatch.
 	startTime := time.Now()
 	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
 		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, elapsedDuration.Microseconds(), otelAttrs...)
+		c.duration.Record(ctx, float64(float64(elapsedDuration)/float64(time.Millisecond)), metric.WithAttributes(otelAttrs...))
 	}()
 
 	// Increment request counter.
-	c.requests.Add(ctx, 1, otelAttrs...)
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
 	ctx, span := c.cfg.Tracer.Start(ctx, "AddPage",
@@ -124,7 +156,7 @@ func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params 
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, otelAttrs...)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 		}
 		span.End()
 	}()
@@ -197,7 +229,7 @@ func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params 
 	u.RawQuery = q.Values().Encode()
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "POST", u, nil)
+	r, err := ht.NewRequest(ctx, "POST", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -228,24 +260,26 @@ func (c *Client) sendAddPage(ctx context.Context, request OptAddPageReq, params 
 // GET /pages/{id}/file/{file_id}
 func (c *Client) GetFile(ctx context.Context, params GetFileParams) (GetFileRes, error) {
 	res, err := c.sendGetFile(ctx, params)
-	_ = res
 	return res, err
 }
 
 func (c *Client) sendGetFile(ctx context.Context, params GetFileParams) (res GetFileRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getFile"),
+		semconv.HTTPMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/pages/{id}/file/{file_id}"),
 	}
 
 	// Run stopwatch.
 	startTime := time.Now()
 	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
 		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, elapsedDuration.Microseconds(), otelAttrs...)
+		c.duration.Record(ctx, float64(float64(elapsedDuration)/float64(time.Millisecond)), metric.WithAttributes(otelAttrs...))
 	}()
 
 	// Increment request counter.
-	c.requests.Add(ctx, 1, otelAttrs...)
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
 	ctx, span := c.cfg.Tracer.Start(ctx, "GetFile",
@@ -258,7 +292,7 @@ func (c *Client) sendGetFile(ctx context.Context, params GetFileParams) (res Get
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, otelAttrs...)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 		}
 		span.End()
 	}()
@@ -307,7 +341,7 @@ func (c *Client) sendGetFile(ctx context.Context, params GetFileParams) (res Get
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u, nil)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -335,24 +369,26 @@ func (c *Client) sendGetFile(ctx context.Context, params GetFileParams) (res Get
 // GET /pages/{id}
 func (c *Client) GetPage(ctx context.Context, params GetPageParams) (GetPageRes, error) {
 	res, err := c.sendGetPage(ctx, params)
-	_ = res
 	return res, err
 }
 
 func (c *Client) sendGetPage(ctx context.Context, params GetPageParams) (res GetPageRes, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getPage"),
+		semconv.HTTPMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/pages/{id}"),
 	}
 
 	// Run stopwatch.
 	startTime := time.Now()
 	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
 		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, elapsedDuration.Microseconds(), otelAttrs...)
+		c.duration.Record(ctx, float64(float64(elapsedDuration)/float64(time.Millisecond)), metric.WithAttributes(otelAttrs...))
 	}()
 
 	// Increment request counter.
-	c.requests.Add(ctx, 1, otelAttrs...)
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
 	ctx, span := c.cfg.Tracer.Start(ctx, "GetPage",
@@ -365,7 +401,7 @@ func (c *Client) sendGetPage(ctx context.Context, params GetPageParams) (res Get
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, otelAttrs...)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 		}
 		span.End()
 	}()
@@ -395,7 +431,7 @@ func (c *Client) sendGetPage(ctx context.Context, params GetPageParams) (res Get
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u, nil)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}
@@ -423,24 +459,26 @@ func (c *Client) sendGetPage(ctx context.Context, params GetPageParams) (res Get
 // GET /pages
 func (c *Client) GetPages(ctx context.Context) (Pages, error) {
 	res, err := c.sendGetPages(ctx)
-	_ = res
 	return res, err
 }
 
 func (c *Client) sendGetPages(ctx context.Context) (res Pages, err error) {
 	otelAttrs := []attribute.KeyValue{
 		otelogen.OperationID("getPages"),
+		semconv.HTTPMethodKey.String("GET"),
+		semconv.HTTPRouteKey.String("/pages"),
 	}
 
 	// Run stopwatch.
 	startTime := time.Now()
 	defer func() {
+		// Use floating point division here for higher precision (instead of Millisecond method).
 		elapsedDuration := time.Since(startTime)
-		c.duration.Record(ctx, elapsedDuration.Microseconds(), otelAttrs...)
+		c.duration.Record(ctx, float64(float64(elapsedDuration)/float64(time.Millisecond)), metric.WithAttributes(otelAttrs...))
 	}()
 
 	// Increment request counter.
-	c.requests.Add(ctx, 1, otelAttrs...)
+	c.requests.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 
 	// Start a span for this request.
 	ctx, span := c.cfg.Tracer.Start(ctx, "GetPages",
@@ -453,7 +491,7 @@ func (c *Client) sendGetPages(ctx context.Context) (res Pages, err error) {
 		if err != nil {
 			span.RecordError(err)
 			span.SetStatus(codes.Error, stage)
-			c.errors.Add(ctx, 1, otelAttrs...)
+			c.errors.Add(ctx, 1, metric.WithAttributes(otelAttrs...))
 		}
 		span.End()
 	}()
@@ -465,7 +503,7 @@ func (c *Client) sendGetPages(ctx context.Context) (res Pages, err error) {
 	uri.AddPathParts(u, pathParts[:]...)
 
 	stage = "EncodeRequest"
-	r, err := ht.NewRequest(ctx, "GET", u, nil)
+	r, err := ht.NewRequest(ctx, "GET", u)
 	if err != nil {
 		return res, errors.Wrap(err, "create request")
 	}

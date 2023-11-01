@@ -10,6 +10,8 @@ import (
 	"github.com/go-faster/jx"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	ht "github.com/ogen-go/ogen/http"
 )
 
 func encodeAddPageResponse(response AddPageRes, w http.ResponseWriter, span trace.Span) error {
@@ -19,11 +21,12 @@ func encodeAddPageResponse(response AddPageRes, w http.ResponseWriter, span trac
 		w.WriteHeader(201)
 		span.SetStatus(codes.Ok, http.StatusText(201))
 
-		e := jx.GetEncoder()
+		e := new(jx.Encoder)
 		response.Encode(e)
 		if _, err := e.WriteTo(w); err != nil {
 			return errors.Wrap(err, "write")
 		}
+
 		return nil
 
 	case *AddPageBadRequest:
@@ -31,11 +34,12 @@ func encodeAddPageResponse(response AddPageRes, w http.ResponseWriter, span trac
 		w.WriteHeader(400)
 		span.SetStatus(codes.Error, http.StatusText(400))
 
-		e := jx.GetEncoder()
+		e := new(jx.Encoder)
 		response.Encode(e)
 		if _, err := e.WriteTo(w); err != nil {
 			return errors.Wrap(err, "write")
 		}
+
 		return nil
 
 	default:
@@ -54,6 +58,7 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 		if _, err := io.Copy(writer, response); err != nil {
 			return errors.Wrap(err, "write")
 		}
+
 		return nil
 
 	case *GetFileOKTextHTML:
@@ -65,6 +70,7 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 		if _, err := io.Copy(writer, response); err != nil {
 			return errors.Wrap(err, "write")
 		}
+
 		return nil
 
 	case *GetFileOKTextPlain:
@@ -76,6 +82,7 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 		if _, err := io.Copy(writer, response); err != nil {
 			return errors.Wrap(err, "write")
 		}
+
 		return nil
 
 	case *GetFileNotFound:
@@ -96,11 +103,12 @@ func encodeGetPageResponse(response GetPageRes, w http.ResponseWriter, span trac
 		w.WriteHeader(200)
 		span.SetStatus(codes.Ok, http.StatusText(200))
 
-		e := jx.GetEncoder()
+		e := new(jx.Encoder)
 		response.Encode(e)
 		if _, err := e.WriteTo(w); err != nil {
 			return errors.Wrap(err, "write")
 		}
+
 		return nil
 
 	case *GetPageNotFound:
@@ -119,11 +127,12 @@ func encodeGetPagesResponse(response Pages, w http.ResponseWriter, span trace.Sp
 	w.WriteHeader(200)
 	span.SetStatus(codes.Ok, http.StatusText(200))
 
-	e := jx.GetEncoder()
+	e := new(jx.Encoder)
 	response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
 	}
+
 	return nil
 }
 
@@ -142,10 +151,14 @@ func encodeErrorResponse(response *ErrorStatusCode, w http.ResponseWriter, span 
 		span.SetStatus(codes.Ok, st)
 	}
 
-	e := jx.GetEncoder()
+	e := new(jx.Encoder)
 	response.Response.Encode(e)
 	if _, err := e.WriteTo(w); err != nil {
 		return errors.Wrap(err, "write")
+	}
+
+	if code >= http.StatusInternalServerError {
+		return errors.Wrapf(ht.ErrInternalServerErrorResponse, "code: %d, message: %s", code, http.StatusText(code))
 	}
 	return nil
 

@@ -66,6 +66,29 @@ func PageToRestWithResults(page *entity.Page) openapi.PageWithResults {
 	}
 }
 
+func BasePageToRest(page *entity.PageBase) openapi.Page {
+	return openapi.Page{
+		ID:      page.ID,
+		URL:     page.URL,
+		Created: page.Created,
+		Meta: openapi.PageMeta{
+			Title:       html.EscapeString(page.Meta.Title),
+			Description: html.EscapeString(page.Meta.Description),
+			Error:       openapi.NewOptString(page.Meta.Error),
+		},
+		Formats: func() []openapi.Format {
+			res := make([]openapi.Format, len(page.Formats))
+
+			for i, format := range page.Formats {
+				res[i] = FormatToRest(format)
+			}
+
+			return res
+		}(),
+		Status: StatusToRest(page.Status),
+	}
+}
+
 func PageToRest(page *entity.Page) openapi.Page {
 	return openapi.Page{
 		ID:      page.ID,

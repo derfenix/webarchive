@@ -8,6 +8,6 @@ func marshal(v interface{}) ([]byte, error) {
 	return msgpack.Marshal(v)
 }
 
-func unmarshal(b []byte, v interface{}) error {
+func unmarshal(b []byte, v interface{}) error { //nolint:unused // will use later
 	return msgpack.Unmarshal(b, v)
 }

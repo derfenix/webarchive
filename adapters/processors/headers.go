@@ -17,7 +17,7 @@ type Headers struct {
 	client *http.Client
 }
 
-func (h *Headers) Process(ctx context.Context, url string) ([]entity.File, error) {
+func (h *Headers) Process(ctx context.Context, url string, _ *entity.Cache) ([]entity.File, error) {
 	var (
 		headersFile entity.File
 		err         error

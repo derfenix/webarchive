@@ -19,7 +19,7 @@ type PDF struct {
 	cfg config.PDF
 }
 
-func (p *PDF) Process(_ context.Context, url string) ([]entity.File, error) {
+func (p *PDF) Process(_ context.Context, url string, cache *entity.Cache) ([]entity.File, error) {
 	gen, err := wkhtmltopdf.NewPDFGenerator()
 	if err != nil {
 		return nil, fmt.Errorf("new pdf generator: %w", err)
@@ -37,18 +37,29 @@ func (p *PDF) Process(_ context.Context, url string) ([]entity.File, error) {
 	gen.Grayscale.Set(p.cfg.Grayscale)
 	gen.Title.Set(url)
 
-	page := wkhtmltopdf.NewPage(url)
-	page.PrintMediaType.Set(p.cfg.MediaPrint)
-	page.JavascriptDelay.Set(200)
-	page.LoadErrorHandling.Set("ignore")
-	page.LoadMediaErrorHandling.Set("ignore")
-	page.FooterRight.Set("[page]")
-	page.HeaderLeft.Set(url)
-	page.HeaderRight.Set(time.Now().Format(time.DateOnly))
-	page.FooterFontSize.Set(10)
-	page.Zoom.Set(p.cfg.Zoom)
-	page.ViewportSize.Set(p.cfg.Viewport)
-	page.NoBackground.Set(true)
+	opts := wkhtmltopdf.NewPageOptions()
+	opts.PrintMediaType.Set(p.cfg.MediaPrint)
+	opts.JavascriptDelay.Set(200)
+	opts.DisableJavascript.Set(true)
+	opts.LoadErrorHandling.Set("ignore")
+	opts.LoadMediaErrorHandling.Set("ignore")
+	opts.FooterRight.Set("[opts]")
+	opts.HeaderLeft.Set(url)
+	opts.HeaderRight.Set(time.Now().Format(time.DateOnly))
+	opts.FooterFontSize.Set(10)
+	opts.Zoom.Set(p.cfg.Zoom)
+	opts.ViewportSize.Set(p.cfg.Viewport)
+	opts.NoBackground.Set(true)
+	opts.DisableLocalFileAccess.Set(true)
+	opts.DisableExternalLinks.Set(true)
+	opts.DisableInternalLinks.Set(true)
+
+	var page wkhtmltopdf.PageProvider
+	if len(cache.Get()) > 0 {
+		page = &wkhtmltopdf.PageReader{Input: cache.Reader(), PageOptions: opts}
+	} else {
+		page = &wkhtmltopdf.Page{Input: url, PageOptions: opts}
+	}
 
 	gen.AddPage(page)
 

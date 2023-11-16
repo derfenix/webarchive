@@ -7,8 +7,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/derfenix/webarchive/entity"
 	"golang.org/x/net/html"
+
+	"github.com/derfenix/webarchive/entity"
 )
 
 func NewSingleFile(client *http.Client) *SingleFile {
@@ -19,21 +20,30 @@ type SingleFile struct {
 	client *http.Client
 }
 
-func (s *SingleFile) Process(ctx context.Context, url string) ([]entity.File, error) {
-	response, err := s.get(ctx, url)
-	if err != nil {
-		return nil, err
+func (s *SingleFile) Process(ctx context.Context, url string, cache *entity.Cache) ([]entity.File, error) {
+	reader := cache.Reader()
+
+	if reader == nil {
+		response, err := s.get(ctx, url)
+		if err != nil {
+			return nil, err
+		}
+
+		if response.Body != nil {
+			defer func() {
+				_ = response.Body.Close()
+			}()
+		}
+
+		reader = response.Body
 	}
 
-	htmlNode, err := html.Parse(response.Body)
+	htmlNode, err := html.Parse(reader)
 	if err != nil {
-		_ = response.Body.Close()
 		return nil, fmt.Errorf("parse response body: %w", err)
 	}
 
-	_ = response.Body.Close()
-
-	if err := s.process(ctx, htmlNode, url, response.Header); err != nil {
+	if err := s.process(ctx, htmlNode, url); err != nil {
 		return nil, fmt.Errorf("process: %w", err)
 	}
 
@@ -69,7 +79,7 @@ func (s *SingleFile) get(ctx context.Context, url string) (*http.Response, error
 	return response, nil
 }
 
-func (s *SingleFile) process(ctx context.Context, node *html.Node, pageURL string, headers http.Header) error {
+func (s *SingleFile) process(ctx context.Context, node *html.Node, pageURL string) error {
 	parsedURL, err := url.Parse(pageURL)
 	if err != nil {
 		return fmt.Errorf("parse page url: %w", err)

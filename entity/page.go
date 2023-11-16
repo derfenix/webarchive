@@ -10,8 +10,8 @@ import (
 )
 
 type Processor interface {
-	Process(ctx context.Context, format Format, url string) Result
-	GetMeta(ctx context.Context, url string) (Meta, error)
+	Process(ctx context.Context, format Format, url string, cache *Cache) Result
+	GetMeta(ctx context.Context, url string, cache *Cache) (Meta, error)
 }
 
 type Format uint8
@@ -66,12 +66,14 @@ func NewPage(url string, description string, formats ...Format) *Page {
 			Created:     time.Now(),
 			Version:     1,
 		},
+		cache: NewCache(),
 	}
 }
 
 type Page struct {
 	PageBase
 	Results ResultsRO
+	cache   *Cache
 }
 
 func (p *Page) SetProcessing() {
@@ -82,7 +84,7 @@ func (p *Page) Process(ctx context.Context, processor Processor) {
 	innerWG := sync.WaitGroup{}
 	innerWG.Add(len(p.Formats))
 
-	meta, err := processor.GetMeta(ctx, p.URL)
+	meta, err := processor.GetMeta(ctx, p.URL, p.cache)
 	if err != nil {
 		p.Meta.Error = err.Error()
 	} else {
@@ -101,7 +103,7 @@ func (p *Page) Process(ctx context.Context, processor Processor) {
 				}
 			}()
 
-			result := processor.Process(ctx, format, p.URL)
+			result := processor.Process(ctx, format, p.URL, p.cache)
 			results.Add(result)
 		}(format)
 	}

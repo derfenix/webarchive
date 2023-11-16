@@ -3,6 +3,7 @@ package processors
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -18,7 +19,7 @@ import (
 const defaultEncoding = "utf-8"
 
 type processor interface {
-	Process(ctx context.Context, url string) ([]entity.File, error)
+	Process(ctx context.Context, url string, cache *entity.Cache) ([]entity.File, error)
 }
 
 func NewProcessors(cfg config.Config) (*Processors, error) {
@@ -73,7 +74,7 @@ type Processors struct {
 	client     *http.Client
 }
 
-func (p *Processors) Process(ctx context.Context, format entity.Format, url string) entity.Result {
+func (p *Processors) Process(ctx context.Context, format entity.Format, url string, cache *entity.Cache) entity.Result {
 	result := entity.Result{Format: format}
 
 	proc, ok := p.processors[format]
@@ -83,7 +84,7 @@ func (p *Processors) Process(ctx context.Context, format entity.Format, url stri
 		return result
 	}
 
-	files, err := proc.Process(ctx, url)
+	files, err := proc.Process(ctx, url, cache)
 	if err != nil {
 		result.Err = fmt.Errorf("process: %w", err)
 
@@ -101,7 +102,7 @@ func (p *Processors) OverrideProcessor(format entity.Format, proc processor) err
 	return nil
 }
 
-func (p *Processors) GetMeta(ctx context.Context, url string) (entity.Meta, error) {
+func (p *Processors) GetMeta(ctx context.Context, url string, cache *entity.Cache) (entity.Meta, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return entity.Meta{}, fmt.Errorf("new request: %w", err)
@@ -124,7 +125,9 @@ func (p *Processors) GetMeta(ctx context.Context, url string) (entity.Meta, erro
 		_ = response.Body.Close()
 	}()
 
-	htmlNode, err := html.Parse(response.Body)
+	tee := io.TeeReader(response.Body, cache)
+
+	htmlNode, err := html.Parse(tee)
 	if err != nil {
 		return entity.Meta{}, fmt.Errorf("parse response body: %w", err)
 	}

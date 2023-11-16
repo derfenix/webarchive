@@ -129,8 +129,29 @@ func (p *Processors) GetMeta(ctx context.Context, url string) (entity.Meta, erro
 		return entity.Meta{}, fmt.Errorf("parse response body: %w", err)
 	}
 
+	var fc *html.Node
+	for fc = htmlNode.FirstChild; fc != nil && fc.Data != "html"; fc = fc.NextSibling {
+	}
+
+	if fc == nil {
+		return entity.Meta{}, fmt.Errorf("failed to find html tag")
+	}
+
+	fc = fc.NextSibling
+	if fc == nil {
+		return entity.Meta{}, fmt.Errorf("failed to find html tag")
+	}
+
+	for fc = fc.FirstChild; fc != nil && fc.Data != "head"; fc = fc.NextSibling {
+		fmt.Println(fc.Data)
+	}
+
+	if fc == nil {
+		return entity.Meta{}, fmt.Errorf("failed to find html tag")
+	}
+
 	meta := entity.Meta{}
-	getMetaData(htmlNode, &meta)
+	getMetaData(fc, &meta)
 	meta.Encoding = encodingFromHeader(response.Header)
 
 	return meta, nil

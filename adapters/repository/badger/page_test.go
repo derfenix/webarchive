@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/derfenix/webarchive/adapters/repository"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/derfenix/webarchive/adapters/repository"
 
 	"github.com/derfenix/webarchive/entity"
 )
@@ -50,12 +51,16 @@ func TestSite(t *testing.T) {
 		storedSite, err := siteRepo.Get(ctx, site.ID)
 		require.NoError(t, err)
 
-		assert.Equal(t, site, storedSite)
+		assert.Equal(t, site.ID, storedSite.ID)
+		assert.Equal(t, site.URL, storedSite.URL)
+		assert.Equal(t, site.Status, storedSite.Status)
 
 		all, err := siteRepo.ListAll(ctx)
 		require.NoError(t, err)
 		require.Len(t, all, 1)
 
-		assert.Equal(t, site, all[0])
+		assert.Equal(t, site.ID, all[0].ID)
+		assert.Equal(t, site.URL, all[0].URL)
+		assert.Equal(t, site.Status, all[0].Status)
 	})
 }

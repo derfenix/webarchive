@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/derfenix/webarchive/config"
 	"github.com/derfenix/webarchive/entity"
@@ -18,7 +19,7 @@ func TestProcessors_GetMeta(t *testing.T) {
 	cfg, err := config.NewConfig(ctx)
 	require.NoError(t, err)
 
-	procs, err := NewProcessors(cfg)
+	procs, err := NewProcessors(cfg, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
 	cache := entity.NewCache()

@@ -3,6 +3,7 @@ package entity
 import (
 	"context"
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -80,16 +81,18 @@ func (p *Page) SetProcessing() {
 	p.Status = StatusProcessing
 }
 
-func (p *Page) Process(ctx context.Context, processor Processor) {
-	innerWG := sync.WaitGroup{}
-	innerWG.Add(len(p.Formats))
-
+func (p *Page) Prepare(ctx context.Context, processor Processor) {
 	meta, err := processor.GetMeta(ctx, p.URL, p.cache)
 	if err != nil {
 		p.Meta.Error = err.Error()
 	} else {
 		p.Meta = meta
 	}
+}
+
+func (p *Page) Process(ctx context.Context, processor Processor) {
+	innerWG := sync.WaitGroup{}
+	innerWG.Add(len(p.Formats))
 
 	results := Results{}
 
@@ -99,7 +102,7 @@ func (p *Page) Process(ctx context.Context, processor Processor) {
 
 			defer func() {
 				if err := recover(); err != nil {
-					results.Add(Result{Format: format, Err: fmt.Errorf("recovered from panic: %v", err)})
+					results.Add(Result{Format: format, Err: fmt.Errorf("recovered from panic: %v (%s)", err, string(debug.Stack()))})
 				}
 			}()
 

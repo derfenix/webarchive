@@ -5,50 +5,46 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 
+	"go.uber.org/zap"
 	"golang.org/x/net/html"
 
+	"github.com/derfenix/webarchive/adapters/processors/internal"
 	"github.com/derfenix/webarchive/entity"
 )
 
-func NewSingleFile(client *http.Client) *SingleFile {
-	return &SingleFile{client: client}
+func NewSingleFile(client *http.Client, log *zap.Logger) *SingleFile {
+	return &SingleFile{client: client, log: log}
 }
 
 type SingleFile struct {
 	client *http.Client
+	log    *zap.Logger
 }
 
-func (s *SingleFile) Process(ctx context.Context, url string, cache *entity.Cache) ([]entity.File, error) {
+func (s *SingleFile) Process(ctx context.Context, pageURL string, cache *entity.Cache) ([]entity.File, error) {
 	reader := cache.Reader()
 
 	if reader == nil {
-		response, err := s.get(ctx, url)
+		response, err := s.get(ctx, pageURL)
 		if err != nil {
 			return nil, err
 		}
 
-		if response.Body != nil {
-			defer func() {
-				_ = response.Body.Close()
-			}()
-		}
+		defer func() {
+			_ = response.Body.Close()
+		}()
 
 		reader = response.Body
 	}
 
-	htmlNode, err := html.Parse(reader)
+	inlinedHTML, err := internal.NewMediaInline(s.log, s.get).Inline(ctx, reader, pageURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse response body: %w", err)
-	}
-
-	if err := s.process(ctx, htmlNode, url); err != nil {
-		return nil, fmt.Errorf("process: %w", err)
+		return nil, fmt.Errorf("inline media: %w", err)
 	}
 
 	buf := bytes.NewBuffer(nil)
-	if err := html.Render(buf, htmlNode); err != nil {
+	if err := html.Render(buf, inlinedHTML); err != nil {
 		return nil, fmt.Errorf("render result html: %w", err)
 	}
 
@@ -77,60 +73,4 @@ func (s *SingleFile) get(ctx context.Context, url string) (*http.Response, error
 	}
 
 	return response, nil
-}
-
-func (s *SingleFile) process(ctx context.Context, node *html.Node, pageURL string) error {
-	parsedURL, err := url.Parse(pageURL)
-	if err != nil {
-		return fmt.Errorf("parse page url: %w", err)
-	}
-
-	baseURL := fmt.Sprintf("%s://%s", parsedURL.Scheme, parsedURL.Host)
-
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		var err error
-		switch child.Data {
-		case "head":
-			err = s.processHead(ctx, child, baseURL)
-
-		case "body":
-			err = s.processBody(ctx, child, baseURL)
-		}
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (s *SingleFile) processHead(ctx context.Context, node *html.Node, baseURL string) error {
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		switch child.Data {
-		case "link":
-			if err := s.processHref(ctx, child.Attr, baseURL); err != nil {
-				return fmt.Errorf("process link %s: %w", child.Attr, err)
-			}
-
-		case "script":
-			if err := s.processSrc(ctx, child.Attr, baseURL); err != nil {
-				return fmt.Errorf("process script %s: %w", child.Attr, err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (s *SingleFile) processBody(ctx context.Context, child *html.Node, url string) error {
-	return nil
-}
-
-func (s *SingleFile) processHref(ctx context.Context, attrs []html.Attribute, baseURL string) error {
-	return nil
-}
-
-func (s *SingleFile) processSrc(ctx context.Context, attrs []html.Attribute, baseURL string) error {
-	return nil
 }

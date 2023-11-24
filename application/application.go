@@ -10,12 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/derfenix/webarchive/adapters/repository"
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ogen-go/ogen/middleware"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/derfenix/webarchive/adapters/repository"
 
 	"github.com/derfenix/webarchive/adapters/processors"
 	badgerRepo "github.com/derfenix/webarchive/adapters/repository/badger"
@@ -41,7 +42,7 @@ func NewApplication(cfg config.Config) (Application, error) {
 		return Application{}, fmt.Errorf("new page repo: %w", err)
 	}
 
-	processor, err := processors.NewProcessors(cfg)
+	processor, err := processors.NewProcessors(cfg, log.Named("processor"))
 	if err != nil {
 		return Application{}, fmt.Errorf("new processors: %w", err)
 	}
@@ -50,7 +51,7 @@ func NewApplication(cfg config.Config) (Application, error) {
 	worker := entity.NewWorker(workerCh, pageRepo, processor, log.Named("worker"))
 
 	server, err := openapi.NewServer(
-		rest.NewService(pageRepo, workerCh),
+		rest.NewService(pageRepo, workerCh, processor),
 		openapi.WithPathPrefix("/api/v1"),
 		openapi.WithMiddleware(
 			func(r middleware.Request, next middleware.Next) (middleware.Response, error) {
@@ -190,6 +191,7 @@ func newLogger(cfg config.Logging) (*zap.Logger, error) {
 	logCfg.EncoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 	logCfg.EncoderConfig.EncodeDuration = zapcore.NanosDurationEncoder
 	logCfg.DisableCaller = true
+	logCfg.DisableStacktrace = true
 
 	logCfg.Level = zap.NewAtomicLevelAt(zapcore.InfoLevel)
 	if cfg.Debug {

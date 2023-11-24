@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
 	"golang.org/x/net/html"
 
 	"github.com/derfenix/webarchive/config"
@@ -22,7 +23,7 @@ type processor interface {
 	Process(ctx context.Context, url string, cache *entity.Cache) ([]entity.File, error)
 }
 
-func NewProcessors(cfg config.Config) (*Processors, error) {
+func NewProcessors(cfg config.Config, log *zap.Logger) (*Processors, error) {
 	jar, err := cookiejar.New(&cookiejar.Options{
 		PublicSuffixList: nil,
 	})
@@ -62,7 +63,7 @@ func NewProcessors(cfg config.Config) (*Processors, error) {
 		processors: map[entity.Format]processor{
 			entity.FormatHeaders:    NewHeaders(httpClient),
 			entity.FormatPDF:        NewPDF(cfg.PDF),
-			entity.FormatSingleFile: NewSingleFile(httpClient),
+			entity.FormatSingleFile: NewSingleFile(httpClient, log),
 		},
 	}
 

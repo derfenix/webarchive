@@ -192,7 +192,7 @@ func (p *Page) ListUnprocessed(ctx context.Context) ([]entity.Page, error) {
 				return fmt.Errorf("get item: %w", err)
 			}
 
-			if page.Status == entity.StatusNew {
+			if page.Status == entity.StatusNew || page.Status == entity.StatusProcessing {
 				//goland:noinspection GoVetCopyLock
 				pages = append(pages, page) //nolint:govet // didn't touch the lock here
 			}

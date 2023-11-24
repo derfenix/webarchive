@@ -40,9 +40,9 @@ func (p *PDF) Process(_ context.Context, url string, cache *entity.Cache) ([]ent
 	opts := wkhtmltopdf.NewPageOptions()
 	opts.PrintMediaType.Set(p.cfg.MediaPrint)
 	opts.JavascriptDelay.Set(200)
-	opts.DisableJavascript.Set(true)
+	opts.DisableJavascript.Set(false)
 	opts.LoadErrorHandling.Set("ignore")
-	opts.LoadMediaErrorHandling.Set("ignore")
+	opts.LoadMediaErrorHandling.Set("skip")
 	opts.FooterRight.Set("[opts]")
 	opts.HeaderLeft.Set(url)
 	opts.HeaderRight.Set(time.Now().Format(time.DateOnly))
@@ -50,9 +50,9 @@ func (p *PDF) Process(_ context.Context, url string, cache *entity.Cache) ([]ent
 	opts.Zoom.Set(p.cfg.Zoom)
 	opts.ViewportSize.Set(p.cfg.Viewport)
 	opts.NoBackground.Set(true)
-	opts.DisableLocalFileAccess.Set(true)
-	opts.DisableExternalLinks.Set(true)
-	opts.DisableInternalLinks.Set(true)
+	opts.DisableLocalFileAccess.Set(false)
+	opts.DisableExternalLinks.Set(false)
+	opts.DisableInternalLinks.Set(false)
 
 	var page wkhtmltopdf.PageProvider
 	if len(cache.Get()) > 0 {

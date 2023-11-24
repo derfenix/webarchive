@@ -66,6 +66,16 @@ func (w *Worker) Start(ctx context.Context, wg *sync.WaitGroup) {
 func (w *Worker) do(ctx context.Context, wg *sync.WaitGroup, page *Page, log *zap.Logger) {
 	defer wg.Done()
 
+	page.SetProcessing()
+	if err := w.pages.Save(ctx, page); err != nil {
+		w.log.Error(
+			"failed to save processing page",
+			zap.String("page_id", page.ID.String()),
+			zap.String("page_url", page.URL),
+			zap.Error(err),
+		)
+	}
+
 	page.Process(ctx, w.processor)
 
 	log.Debug("page processed")

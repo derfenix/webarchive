@@ -20,17 +20,19 @@ type Pages interface {
 	GetFile(ctx context.Context, pageID, fileID uuid.UUID) (*entity.File, error)
 }
 
-func NewService(pages Pages, ch chan *entity.Page) *Service {
+func NewService(pages Pages, ch chan *entity.Page, processor entity.Processor) *Service {
 	return &Service{
-		pages: pages,
-		ch:    ch,
+		pages:     pages,
+		ch:        ch,
+		processor: processor,
 	}
 }
 
 type Service struct {
 	openapi.UnimplementedHandler
-	pages Pages
-	ch    chan *entity.Page
+	processor entity.Processor
+	pages     Pages
+	ch        chan *entity.Page
 }
 
 func (s *Service) GetPage(ctx context.Context, params openapi.GetPageParams) (openapi.GetPageRes, error) {
@@ -79,7 +81,8 @@ func (s *Service) AddPage(ctx context.Context, req openapi.OptAddPageReq, params
 	}
 
 	page := entity.NewPage(url, description, domainFormats...)
-	page.Status = entity.StatusProcessing
+	page.Status = entity.StatusNew
+	page.Prepare(ctx, s.processor)
 
 	if err := s.pages.Save(ctx, page); err != nil {
 		return nil, fmt.Errorf("save page: %w", err)

@@ -12,13 +12,11 @@ import (
 
 	"github.com/dgraph-io/badger/v4"
 	"github.com/ogen-go/ogen/middleware"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/derfenix/webarchive/adapters/repository"
-
 	"github.com/derfenix/webarchive/adapters/processors"
+	"github.com/derfenix/webarchive/adapters/repository"
 	badgerRepo "github.com/derfenix/webarchive/adapters/repository/badger"
 	"github.com/derfenix/webarchive/api/openapi"
 	"github.com/derfenix/webarchive/config"
@@ -172,15 +170,15 @@ func (a *Application) Stop() error {
 	var errs error
 
 	if err := a.db.Sync(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("sync db: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("sync db: %w", err))
 	}
 
 	if err := repository.Backup(a.db, repository.BackupStop); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("backup on stop: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("backup on stop: %w", err))
 	}
 
 	if err := a.db.Close(); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("close db: %w", err))
+		errs = errors.Join(errs, fmt.Errorf("close db: %w", err))
 	}
 
 	return errs

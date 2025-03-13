@@ -1,6 +1,8 @@
 module github.com/derfenix/webarchive
 
-go 1.19
+go 1.23.0
+
+toolchain go1.23.6
 
 require (
 	github.com/SebastiaanKlippert/go-wkhtmltopdf v1.9.0

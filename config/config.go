@@ -17,7 +17,10 @@ func NewConfig(ctx context.Context) (Config, error) {
 		envconfig.OsLookuper(),
 	)
 
-	if err := envconfig.ProcessWith(ctx, &cfg, lookuper); err != nil {
+	if err := envconfig.ProcessWith(ctx, &envconfig.Config{
+		Target:   &cfg,
+		Lookuper: lookuper,
+	}); err != nil {
 		return Config{}, fmt.Errorf("process env: %w", err)
 	}
 

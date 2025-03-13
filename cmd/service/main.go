@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 
 	"go.uber.org/zap"
 
@@ -14,7 +15,7 @@ import (
 )
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	cfg, err := config.NewConfig(ctx)

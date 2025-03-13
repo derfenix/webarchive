@@ -45,3 +45,13 @@ test.http
 db
 http-client.env.json
 http-client.private.env.json
+
+# Devenv
+.devenv*
+devenv.local.nix
+
+# direnv
+.direnv
+
+# pre-commit
+.pre-commit-config.yaml

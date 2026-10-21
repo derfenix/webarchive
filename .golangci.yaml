@@ -1,0 +1,61 @@
+---
+version: "2"
+
+linters:
+  default: standard
+
+  enable:
+    - depguard
+
+  settings:
+    depguard:
+      rules:
+        domain-is-pure:
+          files:
+            - "**/internal/domain/**"
+            - "!$test"
+          allow:
+            - $gostd
+            - github.com/google/uuid
+          desc: the domain imports the standard library and uuid only
+
+        application-sees-ports:
+          files:
+            - "**/internal/application/**"
+            - "!$test"
+          allow:
+            - $gostd
+            - github.com/google/uuid
+            - go.uber.org/zap
+            - github.com/derfenix/webarchive/internal/domain
+          desc: use cases must not import adapters, transports or config
+
+        adapters-are-independent:
+          files:
+            - "**/internal/infrastructure/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/derfenix/webarchive/internal/interfaces
+              desc: adapters must not depend on transports
+            - pkg: github.com/derfenix/webarchive/cmd
+              desc: adapters must not depend on the composition root
+
+        transports-are-independent:
+          files:
+            - "**/internal/interfaces/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/derfenix/webarchive/internal/infrastructure
+              desc: transports must not depend on adapters
+            - pkg: github.com/derfenix/webarchive/cmd
+              desc: transports must not depend on the composition root
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/derfenix/webarchive

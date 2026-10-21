@@ -57,12 +57,12 @@ in case of any conflicts.
 
 #### Start without docker
 ```shell
-go run ./cmd/server/main.go
+go run ./cmd/service/main.go
 ```
 
 #### Change API address
 ```shell
-API_ADDRESS=127.0.0.1:3001 go run ./cmd/server/main.go
+API_ADDRESS=127.0.0.1:3001 go run ./cmd/service/main.go
 ```
 
 #### Start in docker
@@ -113,6 +113,28 @@ Where  `$page_id` — value of the `id` field from previous command response, an
 
 ```shell
 curl -X GET --location "http://localhost:5001/api/v1/pages" | jq .
+```
+
+## Project layout
+
+```
+cmd/service          entry point: builds every implementation and runs them
+internal/domain      pages, formats, results and their rules (stdlib + uuid only)
+internal/application use cases and the ports they declare
+internal/infrastructure  adapters: badger storage, page processors, queue, logging
+internal/interfaces  transports: REST API (ogen), static web UI
+internal/api         OpenAPI spec and the code generated from it
+ui                   static assets of the built-in UI
+```
+
+Dependencies point inward; `golangci-lint` enforces the boundaries. See
+[AGENTS.md](AGENTS.md) for the rules and for the stored-format contract.
+
+Checks:
+
+```shell
+go test -race ./...
+golangci-lint run ./...
 ```
 
 ## Roadmap

@@ -10,7 +10,7 @@ Aimed to be a simple, fast and easy-to-use webarchive for personal or home-net u
 
 ## Requirements 
 
-* Golang 1.19 or higher
+* Golang 1.26 or higher
 * wkhtmltopdf binary in $PATH (to save pages in pdf)
 
 ## Configuration

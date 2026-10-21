@@ -6,11 +6,14 @@ import (
 	"fmt"
 
 	"github.com/go-faster/errors"
-
 	"github.com/ogen-go/ogen/validate"
 )
 
 func (s *AddPageReq) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
 	var failures []validate.FieldError
 	if err := func() error {
 		var failures []validate.FieldError
@@ -59,6 +62,10 @@ func (s Format) Validate() error {
 }
 
 func (s *Page) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
 	var failures []validate.FieldError
 	if err := func() error {
 		if s.Formats == nil {
@@ -106,6 +113,10 @@ func (s *Page) Validate() error {
 }
 
 func (s *PageWithResults) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
 	var failures []validate.FieldError
 	if err := func() error {
 		if s.Formats == nil {
@@ -206,6 +217,10 @@ func (s Pages) Validate() error {
 }
 
 func (s *Result) Validate() error {
+	if s == nil {
+		return validate.ErrNilPointer
+	}
+
 	var failures []validate.FieldError
 	if err := func() error {
 		if err := s.Format.Validate(); err != nil {

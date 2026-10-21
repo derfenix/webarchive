@@ -9,7 +9,6 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/google/uuid"
-
 	"github.com/ogen-go/ogen/conv"
 	"github.com/ogen-go/ogen/middleware"
 	"github.com/ogen-go/ogen/ogenerrors"
@@ -19,9 +18,9 @@ import (
 
 // AddPageParams is parameters of addPage operation.
 type AddPageParams struct {
-	URL         OptString
-	Description OptString
-	Formats     []Format
+	URL         OptString `json:",omitempty,omitzero"`
+	Description OptString `json:",omitempty,omitzero"`
+	Formats     []Format  `json:",omitempty"`
 }
 
 func unpackAddPageParams(packed middleware.Parameters) (params AddPageParams) {
@@ -149,6 +148,7 @@ func decodeAddPageParams(args [0]string, argsEscaped bool, r *http.Request) (par
 
 		if err := q.HasParam(cfg); err == nil {
 			if err := q.DecodeParam(cfg, func(d uri.Decoder) error {
+				params.Formats = nil
 				return d.DecodeArray(func(d uri.Decoder) error {
 					var paramsDotFormatsVal Format
 					if err := func() error {

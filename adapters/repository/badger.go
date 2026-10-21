@@ -30,7 +30,7 @@ type logger struct {
 }
 
 func (l *logger) Warningf(s string, i ...interface{}) {
-	l.SugaredLogger.Warnf(s, i...)
+	l.Warnf(s, i...)
 }
 
 func NewBadger(dir string, log *zap.Logger) (*badger.DB, error) {

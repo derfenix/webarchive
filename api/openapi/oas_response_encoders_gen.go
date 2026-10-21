@@ -8,18 +8,16 @@ import (
 
 	"github.com/go-faster/errors"
 	"github.com/go-faster/jx"
+	ht "github.com/ogen-go/ogen/http"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
-
-	ht "github.com/ogen-go/ogen/http"
 )
 
 func encodeAddPageResponse(response AddPageRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *Page:
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(201)
-		span.SetStatus(codes.Ok, http.StatusText(201))
 
 		e := new(jx.Encoder)
 		response.Encode(e)
@@ -30,9 +28,8 @@ func encodeAddPageResponse(response AddPageRes, w http.ResponseWriter, span trac
 		return nil
 
 	case *AddPageBadRequest:
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(400)
-		span.SetStatus(codes.Error, http.StatusText(400))
 
 		e := new(jx.Encoder)
 		response.Encode(e)
@@ -52,9 +49,11 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 	case *GetFileOKApplicationPdf:
 		w.Header().Set("Content-Type", "application/pdf")
 		w.WriteHeader(200)
-		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		writer := w
+		if closer, ok := response.Data.(io.Closer); ok {
+			defer closer.Close()
+		}
 		if _, err := io.Copy(writer, response); err != nil {
 			return errors.Wrap(err, "write")
 		}
@@ -62,11 +61,13 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 		return nil
 
 	case *GetFileOKTextHTML:
-		w.Header().Set("Content-Type", "text/html")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(200)
-		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		writer := w
+		if closer, ok := response.Data.(io.Closer); ok {
+			defer closer.Close()
+		}
 		if _, err := io.Copy(writer, response); err != nil {
 			return errors.Wrap(err, "write")
 		}
@@ -74,11 +75,13 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 		return nil
 
 	case *GetFileOKTextPlain:
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
-		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		writer := w
+		if closer, ok := response.Data.(io.Closer); ok {
+			defer closer.Close()
+		}
 		if _, err := io.Copy(writer, response); err != nil {
 			return errors.Wrap(err, "write")
 		}
@@ -87,7 +90,6 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 
 	case *GetFileNotFound:
 		w.WriteHeader(404)
-		span.SetStatus(codes.Error, http.StatusText(404))
 
 		return nil
 
@@ -99,9 +101,8 @@ func encodeGetFileResponse(response GetFileRes, w http.ResponseWriter, span trac
 func encodeGetPageResponse(response GetPageRes, w http.ResponseWriter, span trace.Span) error {
 	switch response := response.(type) {
 	case *PageWithResults:
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(200)
-		span.SetStatus(codes.Ok, http.StatusText(200))
 
 		e := new(jx.Encoder)
 		response.Encode(e)
@@ -113,7 +114,6 @@ func encodeGetPageResponse(response GetPageRes, w http.ResponseWriter, span trac
 
 	case *GetPageNotFound:
 		w.WriteHeader(404)
-		span.SetStatus(codes.Error, http.StatusText(404))
 
 		return nil
 
@@ -123,9 +123,8 @@ func encodeGetPageResponse(response GetPageRes, w http.ResponseWriter, span trac
 }
 
 func encodeGetPagesResponse(response Pages, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(200)
-	span.SetStatus(codes.Ok, http.StatusText(200))
 
 	e := new(jx.Encoder)
 	response.Encode(e)
@@ -137,18 +136,15 @@ func encodeGetPagesResponse(response Pages, w http.ResponseWriter, span trace.Sp
 }
 
 func encodeErrorResponse(response *ErrorStatusCode, w http.ResponseWriter, span trace.Span) error {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	code := response.StatusCode
 	if code == 0 {
 		// Set default status code.
 		code = http.StatusOK
 	}
 	w.WriteHeader(code)
-	st := http.StatusText(code)
-	if code >= http.StatusBadRequest {
-		span.SetStatus(codes.Error, st)
-	} else {
-		span.SetStatus(codes.Ok, st)
+	if code >= http.StatusInternalServerError {
+		span.SetStatus(codes.Error, http.StatusText(code))
 	}
 
 	e := new(jx.Encoder)

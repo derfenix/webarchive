@@ -10,6 +10,12 @@ import (
 	"github.com/ogen-go/ogen/uri"
 )
 
+var (
+	rn1AllowedHeaders = map[string]string{
+		"POST": "Content-Type",
+	}
+)
+
 func (s *Server) cutPrefix(path string) (string, bool) {
 	prefix := s.cfg.Prefix
 	if prefix == "" {
@@ -50,6 +56,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		switch elem[0] {
 		case '/': // Prefix: "/pages"
+
 			if l := len("/pages"); len(elem) >= l && elem[0:l] == "/pages" {
 				elem = elem[l:]
 			} else {
@@ -63,13 +70,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				case "POST":
 					s.handleAddPageRequest([0]string{}, elemIsEscaped, w, r)
 				default:
-					s.notAllowed(w, r, "GET,POST")
+					s.notAllowed(w, r, notAllowedParams{
+						allowedMethods: "GET,POST",
+						allowedHeaders: rn1AllowedHeaders,
+						acceptPost:     "application/json",
+						acceptPatch:    "",
+					})
 				}
 
 				return
 			}
 			switch elem[0] {
 			case '/': // Prefix: "/"
+
 				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 					elem = elem[l:]
 				} else {
@@ -92,13 +105,19 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 							args[0],
 						}, elemIsEscaped, w, r)
 					default:
-						s.notAllowed(w, r, "GET")
+						s.notAllowed(w, r, notAllowedParams{
+							allowedMethods: "GET",
+							allowedHeaders: nil,
+							acceptPost:     "",
+							acceptPatch:    "",
+						})
 					}
 
 					return
 				}
 				switch elem[0] {
 				case '/': // Prefix: "/file/"
+
 					if l := len("/file/"); len(elem) >= l && elem[0:l] == "/file/" {
 						elem = elem[l:]
 					} else {
@@ -106,7 +125,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 					}
 
 					// Param: "file_id"
-					// Leaf parameter
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
 					args[1] = elem
 					elem = ""
 
@@ -119,13 +142,21 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 								args[1],
 							}, elemIsEscaped, w, r)
 						default:
-							s.notAllowed(w, r, "GET")
+							s.notAllowed(w, r, notAllowedParams{
+								allowedMethods: "GET",
+								allowedHeaders: nil,
+								acceptPost:     "",
+								acceptPatch:    "",
+							})
 						}
 
 						return
 					}
+
 				}
+
 			}
+
 		}
 	}
 	s.notFound(w, r)
@@ -133,12 +164,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 // Route is route object.
 type Route struct {
-	name        string
-	summary     string
-	operationID string
-	pathPattern string
-	count       int
-	args        [2]string
+	name           string
+	summary        string
+	operationID    string
+	operationGroup string
+	pathPattern    string
+	count          int
+	args           [2]string
 }
 
 // Name returns ogen operation name.
@@ -156,6 +188,11 @@ func (r Route) Summary() string {
 // OperationID returns OpenAPI operationId.
 func (r Route) OperationID() string {
 	return r.operationID
+}
+
+// OperationGroup returns the x-ogen-operation-group value.
+func (r Route) OperationGroup() string {
+	return r.operationGroup
 }
 
 // PathPattern returns OpenAPI path.
@@ -207,6 +244,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 		}
 		switch elem[0] {
 		case '/': // Prefix: "/pages"
+
 			if l := len("/pages"); len(elem) >= l && elem[0:l] == "/pages" {
 				elem = elem[l:]
 			} else {
@@ -216,17 +254,19 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 			if len(elem) == 0 {
 				switch method {
 				case "GET":
-					r.name = "GetPages"
+					r.name = GetPagesOperation
 					r.summary = "Get all pages"
 					r.operationID = "getPages"
+					r.operationGroup = ""
 					r.pathPattern = "/pages"
 					r.args = args
 					r.count = 0
 					return r, true
 				case "POST":
-					r.name = "AddPage"
+					r.name = AddPageOperation
 					r.summary = "Add new page"
 					r.operationID = "addPage"
+					r.operationGroup = ""
 					r.pathPattern = "/pages"
 					r.args = args
 					r.count = 0
@@ -237,6 +277,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 			}
 			switch elem[0] {
 			case '/': // Prefix: "/"
+
 				if l := len("/"); len(elem) >= l && elem[0:l] == "/" {
 					elem = elem[l:]
 				} else {
@@ -255,9 +296,10 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				if len(elem) == 0 {
 					switch method {
 					case "GET":
-						r.name = "GetPage"
+						r.name = GetPageOperation
 						r.summary = ""
 						r.operationID = "getPage"
+						r.operationGroup = ""
 						r.pathPattern = "/pages/{id}"
 						r.args = args
 						r.count = 1
@@ -268,6 +310,7 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 				}
 				switch elem[0] {
 				case '/': // Prefix: "/file/"
+
 					if l := len("/file/"); len(elem) >= l && elem[0:l] == "/file/" {
 						elem = elem[l:]
 					} else {
@@ -275,17 +318,22 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 					}
 
 					// Param: "file_id"
-					// Leaf parameter
+					// Leaf parameter, slashes are prohibited
+					idx := strings.IndexByte(elem, '/')
+					if idx >= 0 {
+						break
+					}
 					args[1] = elem
 					elem = ""
 
 					if len(elem) == 0 {
+						// Leaf node.
 						switch method {
 						case "GET":
-							// Leaf: GetFile
-							r.name = "GetFile"
+							r.name = GetFileOperation
 							r.summary = ""
 							r.operationID = "getFile"
+							r.operationGroup = ""
 							r.pathPattern = "/pages/{id}/file/{file_id}"
 							r.args = args
 							r.count = 2
@@ -294,8 +342,11 @@ func (s *Server) FindPath(method string, u *url.URL) (r Route, _ bool) {
 							return
 						}
 					}
+
 				}
+
 			}
+
 		}
 	}
 	return r, false

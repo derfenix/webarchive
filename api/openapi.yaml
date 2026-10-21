@@ -19,7 +19,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/pages'
         default:
-          $ref: '#/components/responses/undefinedError'
+          $ref: '#/components/responses/error'
     post:
       operationId: addPage
       summary: Add new page
@@ -80,7 +80,7 @@ paths:
                   - error
                   - field
         default:
-          $ref: '#/components/responses/undefinedError'
+          $ref: '#/components/responses/error'
 
   /pages/{id}:
     parameters:
@@ -103,7 +103,7 @@ paths:
         404:
           description: Page not found
         default:
-          $ref: '#/components/responses/undefinedError'
+          $ref: '#/components/responses/error'
 
   /pages/{id}/file/{file_id}:
     parameters:
@@ -136,11 +136,11 @@ paths:
         404:
           description: Page of file not found
         default:
-          $ref: '#/components/responses/undefinedError'
+          $ref: '#/components/responses/error'
 
 components:
   responses:
-    undefinedError:
+    error:
       description: Undefined Error
       content:
         application/json:
